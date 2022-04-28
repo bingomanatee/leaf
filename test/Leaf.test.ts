@@ -20,7 +20,14 @@ describe('Leaf', () => {
       expect(l.vid).toBeGreaterThan(firstVid);
     });
   });
+  describe('.next(change)', () => {
+    it('blends similar objects', () => {
+      const leaf = new Leaf({ x: 0, y: 1 });
 
+      leaf.next({ w: -1, z: 2 });
+      expect(leaf.value).toEqual({ w: -1, x: 0, y: 1, z: 2 });
+    });
+  });
   describe('with children', () => {
     describe('.canBranch', () => {
       it('should NOT recognize branches in number', () => {
@@ -54,7 +61,6 @@ describe('Leaf', () => {
           }
         );
 
-        console.log('--- leaf with child is ', l, 'data is ', l.data);
         expect(l.value).toEqual({
           foo: 1,
           bar: 2,
@@ -97,6 +103,25 @@ describe('Leaf', () => {
         expect(l.value).toEqual({ w: -1, x: 0, y: 1, z: 2 });
         l.remChild('w');
         expect(l.value).toEqual({ x: 0, y: 1, z: 2 });
+      });
+    });
+
+    describe('.next', () => {
+      it('should update child objects', () => {
+        const l = new Leaf({}, { children: { x: 1, y: 2 } });
+        expect(l.value).toEqual({ x: 1, y: 2 });
+
+        l.next({ x: 4 });
+        expect(l.value).toEqual({ x: 4, y: 2 });
+        expect(l.children?.get('x').value).toEqual(4);
+      });
+      it('should update parent if child changes', () => {
+        const l = new Leaf({}, { children: { x: 1, y: 2 } });
+        l.children?.get('x').next(4);
+
+        l.next({ x: 4 });
+        expect(l.value).toEqual({ x: 4, y: 2 });
+        expect(l.children?.get('x').value).toEqual(4);
       });
     });
   });

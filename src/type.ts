@@ -1,7 +1,13 @@
 export type MessageType = {
   target: LeafType;
   type: mType;
-  data?: { [key: string]: any };
+  data?: {
+    direction?: PushType;
+    value?: any;
+    change?: any;
+    base?: any;
+    [key: string]: any;
+  };
   status: MessageStatus;
   vid: number;
 };
@@ -19,7 +25,7 @@ export type LeafType = {
   value: any;
   base: any;
   vid: number;
-  next: (change: any) => void;
+  next: (change: any, direction?: PushType) => void;
   complete: () => void;
   subscribe: (
     listener: (
@@ -31,6 +37,8 @@ export type LeafType = {
   ) => SubscriberType;
   parent?: LeafType;
   root: LeafType;
+  hasChild(name: any): boolean;
+  form: symbol;
 };
 
 export enum MessageStatus {
@@ -40,18 +48,25 @@ export enum MessageStatus {
 }
 
 export type TestFnType = (value: any, target: LeafType) => any;
-
-export type childrenType = Map<any, any> | { [key: string | number]: any };
+export type childrenType = Map<any, any> | Record<string | number, any>;
 
 export type LeafOptionsType = {
   test?: TestFnType | TestFnType[];
   parent?: LeafType | null;
   children?: childrenType;
+  name?: string;
 };
 
 export enum TransTokenType {
   TRANS_TOKEN_VERSION = 'transToken:version',
   TRANS_TOKEN_ACTION = 'transToken:action',
+}
+
+export enum PushType {
+  default,
+  up,
+  down,
+  first,
 }
 
 export type scalarType = number | string | symbol | null;

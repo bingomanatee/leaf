@@ -1,9 +1,18 @@
-import EventEmitter from "emitix";
-import {LeafOptionsType, LeafType, MessageStatus, MessageType, mType, TestFnType, TransTokenType} from "./type";
-import {Message} from "./Message";
-import {Token} from "./Token";
-import {detectForm, isThere} from "./utils/tests";
-import {ABSENT} from "./constants";
+import EventEmitter from 'emitix';
+import {
+  LeafOptionsType,
+  LeafType,
+  MessageStatus,
+  MessageType,
+  mType,
+  PushType,
+  TestFnType,
+  TransTokenType,
+} from './type';
+import { Message } from './Message';
+import { Token } from './Token';
+import { detectForm, isThere } from './utils/tests';
+import { ABSENT } from './constants';
 
 function asError(err) {
   let error = err;
@@ -23,126 +32,98 @@ function asError(err) {
   return error;
 }
 
-export default class LeafBase extends EventEmitter.Protected<{
-  'version-prep': [MessageType],
-  'version-validate': [MessageType],
-  'version-post': [MessageType],
-  rollback: [Token],
-  commit: [Token],
-  trans: [Token],
-  recompute: []
-}>() implements LeafType {
-
+export default class LeafBase
+  extends EventEmitter.Protected<{
+    'version-change': [MessageType]; // split up any child-centric updates in change to child.next()s
+    'version-prep': [MessageType]; // integrate child values into value
+    'version-validate': [MessageType]; // test pending value against any user confirmations.
+    'version-post': [MessageType]; // run any decorators; remove any child keys from base (@TODO)
+    rollback: [Token];
+    commit: [Token];
+    trans: [Token];
+    recompute: []; // deprecated?
+  }>()
+  implements LeafType {
   protected readonly _initialized: boolean = false;
+  name: any;
+
   constructor(value, options?: LeafOptionsType) {
     super();
 
-    if (options) this.config(options);
+    if (options) {
+      this.config(options);
+    }
     this._transListen();
     this._initialized = true;
-    this.push(value);
-  }
-
-  private config(options: LeafOptionsType) {
-    if (Array.isArray(options.test)) {
-      options.test.forEach((test) => this.addTest(test));
-    } else if (options.test) {
-      this.addTest(options.test);
-    }
+    this.push(value, PushType.first);
   }
 
   // region reflection
 
-  public get form(): symbol | undefined {
-    if (!this._activeVersion?.data) return undefined;
-
-    if (!(this._activeVersion.data.form)) {
-      this._activeVersion.data.form = detectForm(this.value);
+  public get form(): symbol {
+    if (this._activeVersion?.data) {
+      if (!this._activeVersion?.data?.form) {
+        this._activeVersion.data.form = detectForm(this.value);
+      }
     }
-    return this._activeVersion.data.form;
+    return this._activeVersion?.data?.form || ABSENT;
   }
 
   // endregion
-
-  // region tests
-  public addTest(_test: TestFnType) {
-    //@TOO: implement
-  }
-
-  // endregion
-
-  // region stack
-
-  protected readonly history: Message [] = [];
 
   /**
    * this is the last _locked in_ version id
    * - the one after a non-errored out transaction.
    * @protected
    */
-  protected _vid: number = 0;
+  protected _vid = 0;
+
+  // endregion
+
+  // region stack
+  protected readonly history: Message[] = [];
+
   get vid(): number {
     return this._vid;
   }
 
-  push(change) {
-    this.trans(() => {
-      const base = this._doChange(this.base, change);
-      const version = new Message(this, mType.version, {value: base, base: base});
-      this.history.push(version);
-
-      this.emit('version-prep', version);
-      if (version.status === MessageStatus.candidate) this.emit('version-validate', version);
-      if (version.status === MessageStatus.candidate) this.emit('version-post', version);
-      if (version.err) throw version.err;
-    }, TransTokenType.TRANS_TOKEN_VERSION);
-  }
-
   /**
    * returns the version associated with the vid of this leaf;
-   * ignores status, errors, subsquent candidates etc.
+   * ignores status, errors, later candidates etc.
    */
   get _current(): MessageType | null {
-    let i = -1;
-    while (i > -this.history.length) {
-      const message = this.history.at(i);
+    for (let i = this.history.length - 1; i >= 0; --i) {
+      const message = this.history[i];
       if (message && message.type === mType.version) {
         if (message.vid === this.vid) {
           return message;
         }
       }
-      i -= 1;
     }
     return null;
   }
 
-  get data () {
+  get data() {
     return this._activeVersion?.data;
   }
 
   /**
    * the "top of the stack" -- the last confirmed/candidate,*/
   get _activeVersion(): Message | null {
-    for (let i = this.history.length - 1; i >=0; --i) {
-      const message = this.history.at(i);
-      if (message && message.type === mType.version
-        && [MessageStatus.confirmed, MessageStatus.candidate].includes(message.status)) {
+    for (let i = this.history.length - 1; i >= 0; --i) {
+      const message = this.history[i];
+      if (
+        message &&
+        message.type === mType.version &&
+        [MessageStatus.confirmed, MessageStatus.candidate].includes(
+          message.status
+        )
+      ) {
         return message;
       }
     }
     return null;
   }
-
-// endregion
-
-  // region change
-  next(change) {
-    this.push(change);
-  }
-
-  //endregion
-
-  // region value
 
   /**
    * value is the "decorated" value of the leaf
@@ -165,6 +146,57 @@ export default class LeafBase extends EventEmitter.Protected<{
     return undefined;
   }
 
+  // endregion
+
+  // region tests
+  public addTest(_test?: TestFnType | TestFnType[]) {
+    //@TOO: implement
+  }
+  // endregion
+
+  // region change
+
+  /**
+   *
+   * @param change {any} the value to replace / amend the current one
+   * @param direction indicates whether:
+   *   - the value is an initializer (first)
+   *   - the value is an update from the parent (up)
+   *   - the value is an update from a child (down)
+   *   - the value is an external update (default)
+   */
+  push(change, direction = PushType.default) {
+    const base = this._amend(this.base, change);
+    const version = new Message(this, mType.version, {
+      value: base,
+      change,
+      base: base,
+      direction,
+    });
+    this.history.push(version);
+    if (version.status === MessageStatus.candidate) {
+      this.emit('version-change', version);
+    }
+    if (version.status === MessageStatus.candidate) {
+      this.emit('version-prep', version);
+    }
+    if (version.status === MessageStatus.candidate) {
+      this.emit('version-validate', version);
+    }
+    if (version.status === MessageStatus.candidate) {
+      this.emit('version-post', version);
+    }
+    if (version.err) {
+      throw version.err;
+    }
+  }
+
+  next(change, direction?: PushType) {
+    this.trans(() => {
+      this.push(change, direction);
+    }, TransTokenType.TRANS_TOKEN_VERSION);
+  }
+
   /**
    * this computes the decorated value.
    * Its used internally, and cached in versions - don't call in your app.
@@ -175,36 +207,43 @@ export default class LeafBase extends EventEmitter.Protected<{
 
   // endregion
 
-  // region mutators
+  // region broadcast
 
+  public isCompleted = false;
   complete() {
-
+    this.isCompleted = true;
   }
 
   subscribe(_listener: any) {
     return {
-      unsubscribe() {
-      }
-    }
+      unsubscribe() {},
+    };
   }
 
   // endregion
 
   // region transact
 
+  protected readonly pendingTokens = new Set();
+
   _transListen() {
     this.on('rollback', (trans: Token) => {
-      this.history.forEach((version) => {
-        if (version.status === MessageStatus.confirmed && (version.vid > trans.vid)) {
+      this.history.forEach(version => {
+        if (
+          version.status === MessageStatus.confirmed &&
+          version.vid > trans.vid
+        ) {
           version.cancel();
         }
-      })
+      });
     });
 
     this.on('commit', (_trans: Token) => {
       if (_trans.type === TransTokenType.TRANS_TOKEN_VERSION) {
         const lastGood = this._activeVersion;
-        if (!lastGood) return;
+        if (!lastGood) {
+          return;
+        }
         if (lastGood.vid !== this.vid) {
           if (lastGood.status !== MessageStatus.confirmed) {
             lastGood.confirm();
@@ -227,29 +266,46 @@ export default class LeafBase extends EventEmitter.Protected<{
     return token;
   }
 
-  private _pendingTokens = new Set();
-  get pendingTokens() {
-    return this._pendingTokens;
-  }
-
   _startTrans(type, label?) {
     const token = new Token(this, this.vid, type, label);
-    this._pendingTokens.add(token);
+    this.pendingTokens.add(token);
     this.emit('trans', token);
     return token;
   }
 
   _endTrans(token: Token, err?: Error) {
-    this._pendingTokens.delete(token);
+    this.pendingTokens.delete(token);
 
     if (err) {
       token.error = err;
       this.emit('rollback', token);
       throw err;
-    } else if (!this._pendingTokens.size) {
+    } else if (!this.pendingTokens.size) {
       this.emit('commit', token);
     } else {
-      console.log('_endTrans: size is ', this._pendingTokens.size);
+      console.log('_endTrans: size is ', this.pendingTokens.size);
+    }
+  }
+
+  protected _amend(_base, change = ABSENT) {
+    if (isThere(change)) {
+      return change;
+    } else {
+      return _base;
+    }
+  }
+
+  // endregion
+
+  // region misc
+
+  private config(options: LeafOptionsType) {
+    if ('test' in options) {
+      this.addTest(options.test);
+    }
+
+    if ('name' in options) {
+      this.name = options.name;
     }
   }
 
@@ -258,15 +314,17 @@ export default class LeafBase extends EventEmitter.Protected<{
   // region stand-ins
   /**
    * these are methods / properties implemented in child classes but
-   * that are required for LeafType iemplementation
+   * that are required for LeafType implementation
    */
 
   get root(): LeafType {
     return this;
   }
 
-  protected _doChange(_base, change = ABSENT) {
-    return isThere(change) ? change : _base;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  hasChild(_key) {
+    return false;
   }
+
   // endregion
 }

@@ -1,19 +1,19 @@
 import {
   ABSENT,
-  TYPE_SYMBOL,
-  NAME_UNNAMED,
   FORM_ARRAY,
+  FORM_FUNCTION,
   FORM_MAP,
   FORM_OBJECT,
   FORM_VALUE,
-  TYPE_STRING,
-  TYPE_NUMBER,
-  TYPE_DATE,
-  FORM_FUNCTION,
+  NAME_UNNAMED,
   TYPE_ANY,
+  TYPE_DATE,
+  TYPE_NUMBER,
+  TYPE_STRING,
+  TYPE_SYMBOL,
 } from '../constants';
 
-import { sortBy, isNumber } from 'lodash-es';
+import { isNumber, sortBy } from 'lodash-es';
 
 export function isThere(item) {
   return ![ABSENT, NAME_UNNAMED, undefined].includes(item);
@@ -230,57 +230,6 @@ export function amend(value, change, form: string | symbol = ABSENT) {
   return out;
 }
 
-export function setKey(target, keyValue, key, form: string | symbol = ABSENT) {
-  if (!isThere(form)) {
-    form = detectForm(target);
-  }
-  const out = target;
-  switch (form) {
-    case FORM_MAP:
-      out.set(key, keyValue);
-      break;
-
-    case FORM_OBJECT:
-      try {
-        out[key] = keyValue;
-      } catch (err) {
-        console.warn('illegal key ', key, 'for target', target);
-      }
-      break;
-
-    case FORM_ARRAY:
-      out[key] = keyValue;
-      break;
-  }
-  return out;
-}
-
-export function clone(value, type: symbol | string = ABSENT) {
-  if (!isThere(type)) {
-    type = detectForm(value);
-  }
-  let out = value;
-  let FORM_DATE;
-  switch (type) {
-    case FORM_MAP:
-      out = new Map(value);
-      break;
-
-    case FORM_OBJECT:
-      out = { ...value };
-      break;
-
-    case FORM_ARRAY:
-      out = [...value];
-      break;
-
-    case FORM_DATE:
-      out = new Date(value);
-      break;
-  }
-  return out;
-}
-
 const FIND_SYMBOL = /Symbol\((.*:)?(.*)\)/;
 
 /** used in a test filter to throw errors if the value deviates
@@ -311,28 +260,5 @@ export function testForType({ next, target }): string | null {
         .replace(FIND_SYMBOL, (_, _prefix, name) => name)}`;
     }
   }
-  return out;
-}
-
-export function makeNew(type, isInstance = false) {
-  if (isInstance) {
-    return makeNew(detectForm(type));
-  }
-
-  let out: any = null;
-  switch (type) {
-    case FORM_MAP:
-      out = new Map();
-      break;
-
-    case FORM_ARRAY:
-      out = [];
-      break;
-
-    case FORM_OBJECT:
-      out = {};
-      break;
-  }
-
   return out;
 }

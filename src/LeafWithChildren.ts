@@ -1,9 +1,16 @@
-import { LeafOptionsType, LeafType, MessageType, valueType } from './type';
+import {
+  LeafOptionsType,
+  LeafType,
+  MessageType,
+  PushType,
+  valueType,
+} from './type';
 import LeafBase from './LeafBase';
-import { branchingFormIDs } from './constants';
+import { ABSENT, branchingFormIDs } from './constants';
 import Leaf from './Leaf';
-import { clone, setKey } from './utils/tests';
+import { amend, detectForm, e, isCompound, isThere } from './utils/tests';
 import { toMap } from './utils/conversion';
+import { clone, iterate, makeNew, setKey } from './utils/compound';
 
 export default class LeafWithChildren extends LeafBase {
   constructor(value: valueType, config?: LeafOptionsType) {
@@ -11,6 +18,25 @@ export default class LeafWithChildren extends LeafBase {
     if (config) {
       this._childOpts(config);
     }
+
+    this._listenForChildren();
+
+    if (this.hasChildren) {
+      this.next(this.base, PushType.first);
+    }
+  }
+
+  private _listenForChildren() {
+    this.on('version-change', (version: MessageType) => {
+      if (this.hasChildren) {
+        iterate(version.data?.change, (value, key) => {
+          if (this.hasChild(key)) {
+            this.children?.get(key).next(value, PushType.up);
+          }
+        });
+      }
+    });
+
     this.on('version-prep', (version: MessageType) => {
       if (this.canBranch) {
         if (version.data) {
@@ -18,9 +44,38 @@ export default class LeafWithChildren extends LeafBase {
         }
       }
     });
-    if (this.hasChildren) {
-      this.push(this.base);
+
+    this.on('version-post', (version: MessageType) => {
+      if (this.parent) {
+        switch (version.data?.direction) {
+          case PushType.up:
+            // no change: came from parent
+            break;
+
+          case PushType.down:
+            this.parent.next(this._asChange, PushType.down);
+            break;
+
+          case PushType.first:
+            // no change - assume parent will harvest
+            break;
+
+          case PushType.default:
+            this.parent.next(this._asChange, PushType.down);
+            break;
+        }
+      }
+    });
+  }
+
+  private get _asChange() {
+    if (this.parent) {
+      const form = this.parent.form;
+      const change = makeNew(form);
+      setKey(change, this.value, this.name);
+      return change;
     }
+    return undefined;
   }
 
   private _childOpts(config: LeafOptionsType) {
@@ -49,7 +104,35 @@ export default class LeafWithChildren extends LeafBase {
   // endregion
 
   // region value
+  /**
+   * combine base value and updates into a single value.
+   *
+   * @param base {any}
+   * @param change {any}
+   * @protected
+   */
+  protected _amend(base, change = ABSENT) {
+    if (isThere(change)) {
+      const baseForm = detectForm(base);
+      if (!isCompound(baseForm)) {
+        return change;
+      }
 
+      if (detectForm(change) !== baseForm) {
+        if (this.hasChildren) {
+          throw e('you cannot change the form of leafs that have children', {
+            target: this,
+            base: base,
+            change,
+          });
+        }
+        return change;
+      }
+      return amend(base, change, baseForm);
+    } else {
+      return base;
+    }
+  }
   // endregion
 
   // region children
@@ -90,13 +173,17 @@ export default class LeafWithChildren extends LeafBase {
       }
       let child = value;
       if (!(value instanceof Leaf)) {
-        child = new Leaf(value, { parent: this });
+        child = new Leaf(value, { parent: this, name: key });
       }
       this.children.set(key, child);
       if (this._initialized) {
-        this.push(this.base);
+        this.next(this.base, PushType.down);
       }
     }
+  }
+
+  hasChild(key) {
+    return (this.hasChildren && this.children?.has(key)) || false;
   }
 
   addChildren(children) {
@@ -108,7 +195,7 @@ export default class LeafWithChildren extends LeafBase {
     if (this.children?.has(key)) {
       //@TODO: complete() ?
       this.children.delete(key);
-      this.push(this.base);
+      this.next(this.base, PushType.down);
     }
   }
 
