@@ -1,6 +1,6 @@
 import EventEmitter from "emitix";
-import {LeafOptionsType, LeafType, MessageStatus, MessageType, mType, TestFnType, TransTokenType} from "./type";
-import {Message} from "./Message";
+import {LeafOptionsType, LeafType, MessageStatus, MessageType, MessageKind, TestFnType, TransTokenType} from "./type";
+import {MessageBase, VersionMessage} from "./Message";
 import {Token} from "./Token";
 import {detectForm, isThere} from "./utils/tests";
 import {ABSENT} from "./constants";
@@ -73,7 +73,7 @@ export default class LeafBase extends EventEmitter.Protected<{
 
   // region stack
 
-  protected readonly history: Message [] = [];
+  protected readonly history: MessageBase [] = [];
 
   /**
    * this is the last _locked in_ version id
@@ -88,7 +88,7 @@ export default class LeafBase extends EventEmitter.Protected<{
   push(change) {
     this.trans(() => {
       const base = this._doChange(this.base, change);
-      const version = new Message(this, mType.version, {value: base, base: base});
+      const version = new VersionMessage(this, {value: base, base: base});
       this.history.push(version);
 
       this.emit('version-prep', version);
@@ -100,13 +100,13 @@ export default class LeafBase extends EventEmitter.Protected<{
 
   /**
    * returns the version associated with the vid of this leaf;
-   * ignores status, errors, subsquent candidates etc.
+   * ignores status, errors, later candidates etc.
    */
   get _current(): MessageType | null {
     let i = -1;
     while (i > -this.history.length) {
       const message = this.history.at(i);
-      if (message && message.type === mType.version) {
+      if (message && message instanceof VersionMessage) {
         if (message.vid === this.vid) {
           return message;
         }
@@ -122,10 +122,10 @@ export default class LeafBase extends EventEmitter.Protected<{
 
   /**
    * the "top of the stack" -- the last confirmed/candidate,*/
-  get _activeVersion(): Message | null {
+  get _activeVersion(): VersionMessage | null {
     for (let i = this.history.length - 1; i >=0; --i) {
       const message = this.history.at(i);
-      if (message && message.type === mType.version
+      if (message instanceof VersionMessage
         && [MessageStatus.confirmed, MessageStatus.candidate].includes(message.status)) {
         return message;
       }
@@ -194,9 +194,10 @@ export default class LeafBase extends EventEmitter.Protected<{
 
   _transListen() {
     this.on('rollback', (trans: Token) => {
-      this.history.forEach((version) => {
-        if (version.status === MessageStatus.confirmed && (version.vid > trans.vid)) {
-          version.cancel();
+      this.history.forEach((message) => {
+        if (message.type === MessageKind.version
+          && (message.vid > trans.vid)) {
+          message.cancel();
         }
       })
     });

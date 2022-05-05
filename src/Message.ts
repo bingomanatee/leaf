@@ -1,9 +1,9 @@
-import { LeafType, MessageType, mType, MessageStatus } from './type';
+import { LeafType, MessageType, MessageKind, MessageStatus } from './type';
 
 let nextVID = 1;
 
-abstract class MessageBase {
-  constructor(target, messageType: mType) {
+export abstract class MessageBase {
+  constructor(target, messageType: MessageKind) {
     this.target = target;
     this.type = messageType;
     this._status = MessageStatus.candidate;
@@ -11,8 +11,8 @@ abstract class MessageBase {
     ++nextVID;
   }
 
-  readonly type: mType;
   readonly vid: number;
+  readonly type: MessageKind;
   readonly target: LeafType;
   protected _status: MessageStatus;
   get status(): MessageStatus {
@@ -73,11 +73,10 @@ type dataType = { [key: string]: any };
  * the default version is "change driver" -- the value of change drives base
  * which in turn drives value
  */
-export class Message extends MessageBase implements MessageType {
-  constructor(target: LeafType, messageType, data?: dataType) {
-    super(target, messageType);
+export class VersionMessage extends MessageBase implements MessageType {
+  constructor(target: LeafType, data?: dataType) {
+    super(target, MessageKind.version);
     this.data = data || {};
   }
-
   readonly data?: { [key: string]: any };
 }

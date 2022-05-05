@@ -52,6 +52,15 @@ export default class LeafWithChildren extends LeafBase {
 
   // endregion
 
+  // region stack
+
+  get pendingTokens() {
+    if (this.parent) return this.parent.pendingTokens;
+    return super.pendingTokens;
+  }
+
+  // endregion
+
   // region children
 
   /**

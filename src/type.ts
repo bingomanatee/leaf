@@ -1,14 +1,15 @@
 export type MessageType = {
   target: LeafType;
-  type: mType;
+  type: MessageKind;
   data?: { [key: string]: any };
   status: MessageStatus;
   vid: number;
 };
 
-export enum mType {
+export enum MessageKind {
   'version' = 'version',
   'action' = 'action',
+  'trans' = 'trans',
 }
 
 export type SubscriberType = {

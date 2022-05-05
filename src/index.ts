@@ -1,4 +1,4 @@
 import Leaf from './Leaf';
-import { Message } from './Message';
+import { VersionMessage } from './Message';
 
-export { Leaf, Message };
+export { Leaf, VersionMessage };
