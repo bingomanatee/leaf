@@ -29,6 +29,7 @@ export enum StateEnum {
   good = 'good',
   old = 'old',
   removed = 'removed',
+  error = 'error',
 }
 
 export type BranchId = symbol;
