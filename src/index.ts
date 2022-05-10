@@ -1,4 +1,5 @@
-import Leaf from './Leaf';
-import { Message } from './Message';
+import { Leaf } from './Leaf';
+import { Time } from './Time';
+import { Forest } from './Forest';
 
-export { Leaf, Message };
+export { Leaf, Time, Forest };

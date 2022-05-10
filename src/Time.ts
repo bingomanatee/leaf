@@ -1,12 +1,14 @@
+import { TimeValue } from './types';
+
 export abstract class Time {
-  static get next(): number {
+  static get next(): TimeValue {
     Time._second += 1;
     return Time.second;
   }
 
   protected static _second = 0;
 
-  static get second() {
+  static get second(): TimeValue {
     return Time._second;
   }
 
