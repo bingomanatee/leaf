@@ -1,9 +1,8 @@
 import { ForestIF } from './types';
 import EventEmitter from 'emitix';
 import { Schema } from './utils/Schema';
-import { BranchIF } from './types/branch.types';
+import { BranchIF, BranchId } from './types/branch.types';
 import { TreeId, TreeIF } from './types/tree.types';
-import { BranchId } from '../dist/types';
 import { Time } from './Time';
 
 /**

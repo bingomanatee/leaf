@@ -45,10 +45,3 @@ export interface LeafIF {
 export interface WithTime {
   time: TimeValue;
 }
-
-export interface ChangeSet {
-  startTime: TimeValue;
-  endTime: TimeValue;
-  trees?: TreeId[];
-  branches: BranchId[];
-}
