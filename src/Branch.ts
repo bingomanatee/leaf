@@ -1,3 +1,6 @@
+import { StateEnum, TimeValue } from './types';
+import { ABSENT } from './constants';
+import { Time } from './Time';
 import {
   BranchId,
   BranchIF,
@@ -5,32 +8,26 @@ import {
   BranchName,
   BranchSchemaIF,
   BranchUpdate,
-  StateEnum,
-  TimeValue,
-  TreeIF,
-} from './types';
-import { ABSENT } from './constants';
-import { Time } from './Time';
+} from './types/branch.types';
+import { TreeId } from './types/tree.types';
 
 export class Branch implements BranchIF {
   /**
-   * A branch is a creation, deletion or updating of the value and/or schema of a "path" - the chain of branches
-   * indicated through parentage -- in the same Tree (see).
-   * Branches -- and their containing trees -- are only considered "stable" when their state has been advanced to "good".
-   * Older branches are of state "old" -- and those with errors are marked with state "bad".
+   * A branch is a structural part of a tree's definition.
+   * It is actually a version - a time-indexed snapshot of the branch.
    * @param props
    */
 
   constructor(props: BranchInit) {
     const {
-      tree,
-      name,
-      id,
+      treeId,
+      name = '',
+      id = null,
       value = ABSENT,
       schema = ABSENT,
       parent = ABSENT,
     } = props;
-    this.tree = tree;
+    this.treeId = treeId;
     this.name = name;
     this.id = id || Symbol(name);
     if (value !== ABSENT) {
@@ -47,7 +44,7 @@ export class Branch implements BranchIF {
   }
 
   public readonly value: any;
-  tree?: TreeIF;
+  treeId?: TreeId;
   id: BranchId;
   parent?: BranchId;
   name: BranchName;
@@ -58,7 +55,7 @@ export class Branch implements BranchIF {
 
   public update(update: BranchUpdate): BranchIF {
     const props = {
-      tree: this.tree,
+      treeId: this.treeId,
       name: this.name,
       id: this.id,
       parent: this.parent,

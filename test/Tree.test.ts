@@ -1,6 +1,7 @@
 import { Tree } from '../src/Tree';
-import { StateEnum, TypeEnum } from '../src/types';
 import { Forest } from '../src';
+import { Branch } from '../src/Branch';
+import { TypeEnum } from '../src/types';
 
 describe('Tree', () => {
   describe('constructor', () => {
@@ -10,32 +11,23 @@ describe('Tree', () => {
     });
   });
 
-  describe('addBranch', () => {
-    it('should add a new branch', () => {
-      const tree = new Tree({ name: 'ent' });
-      const branch = tree.addBranch({ name: 'alpha', value: 1 });
-      if (branch) {
-        expect(branch.value).toBe(1);
-        expect(branch.name).toBe('alpha');
-      } else {
-        throw new Error('did not create branch');
-      }
-    });
+  describe('.onBranch', () => {
+    it('should add a branch', () => {
+      const forest = new Forest('wood');
+      const tree = new Tree({ forest });
+      const branch = new Branch({
+        name: '',
+        treeId: tree.id,
+        schema: TypeEnum.number,
+        value: 1,
+      });
 
-    it('should update if called with the same name', () => {
-      const tree = new Tree({ name: 'ent' });
-      const branch = tree.addBranch({ name: 'alpha', value: 1 });
-      const updated = tree.addBranch({ name: 'alpha', value: 2 });
-      if (branch) {
-        expect(branch.value).toBe(1);
-        expect(branch.name).toBe('alpha');
+      forest.onBranch(branch);
+      const branches = forest.branches.get(branch.id);
+      if (Array.isArray(branches)) {
+        expect(branches[0]).toBe(branch);
       } else {
-        throw new Error('did not create branch');
-      }
-      if (updated) {
-        expect(updated.id).toBe(branch.id);
-        expect(updated.name).toBe(branch.name);
-        expect(updated.value).toBe(2);
+        throw new Error('branches is empty');
       }
     });
   });
@@ -44,20 +36,17 @@ describe('Tree', () => {
     describe('basic types', () => {
       it('should accept branches of the right type when they have values', () => {
         const forest = new Forest('wood');
-        const tree = forest.makeTree({
-          name: 'ent',
-        });
-        const last = tree.addBranch({
-          value: 'foo',
+        const tree = new Tree({ forest });
+        const branch = new Branch({
           name: '',
-          schema: TypeEnum.string,
+          treeId: tree.id,
+          schema: TypeEnum.number,
+          value: 1,
         });
 
-        if (last) {
-          expect(last.state).toBe(StateEnum.good);
-        } else {
-          throw new Error('last not made');
-        }
+        forest.onBranch(branch);
+
+        expect(branch.error).toBeFalsy();
       });
     });
   });

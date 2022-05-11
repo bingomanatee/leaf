@@ -1,4 +1,4 @@
-import { BranchSchemaIF, FormEnum, TypeEnum } from '../types';
+import { FormEnum, TypeEnum } from '../types';
 import { ABSENT } from '../constants';
 import { identity } from 'lodash-es';
 import {
@@ -12,6 +12,7 @@ import {
   isSymbol,
   returnOrError,
 } from './tests';
+import {BranchSchemaIF} from "../types/branch.types";
 
 export abstract class Schema {
   static validate(schema: BranchSchemaIF, value) {

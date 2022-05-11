@@ -1,30 +1,16 @@
-export type TreeId = symbol;
-export type ForestId = symbol;
+import { BranchId, BranchIF } from './types/branch.types';
+import { TreeId, TreeIF } from './types/tree.types';
 
-export type TreeInit = {
-  forest?: ForestIF;
-  name?: string;
-  id?: ForestId;
-};
+export type ForestId = symbol;
 
 export interface ForestIF {
   id: ForestId;
-  get(id: TreeId): TreeIF[];
-  last(id: TreeId): TreeIF | undefined;
-  makeTree(props: TreeInit): TreeIF;
-
+  trees: Map<TreeId, TreeIF>;
+  branches: Map<BranchId, BranchIF[]>;
   onBranch(branch: BranchIF, tree?: TreeIF): void;
 }
 
 export type TimeValue = number;
-
-export interface TreeIF extends WithTime {
-  readonly time: TimeValue;
-  forest?: ForestIF;
-  id: TreeId;
-  branch(id: BranchId): BranchIF | undefined;
-  addBranch(init: BranchInit): BranchIF | undefined;
-}
 
 export enum StateEnum {
   new = 'new',
@@ -34,40 +20,7 @@ export enum StateEnum {
   error = 'error',
 }
 
-export type BranchId = symbol;
-export type BranchName = string | number;
-
-export interface BranchIF extends WithTime {
-  readonly tree?: TreeIF;
-  id: BranchId;
-  name: BranchName;
-  schema?: BranchSchemaIF;
-  state: StateEnum;
-  update(update: BranchUpdate): BranchIF;
-  value?: any;
-  onError(err): void;
-}
-
-export type BranchUpdate = {
-  value?: any;
-  schema?: BranchSchemaIF;
-  state?: StateEnum;
-  parent?: BranchId;
-};
-
-export type BranchInit = {
-  name: BranchName;
-  id?: BranchId;
-  tree?: TreeIF;
-} & BranchUpdate;
-
 export type TestResult = boolean | string;
-export type BranchTest = (value: any) => TestResult;
-
-export interface BranchRuleIF {
-  name: string;
-  test?: BranchTest;
-}
 
 export enum TypeEnum {
   string = 'string',
@@ -84,10 +37,6 @@ export enum FormEnum {
   scalar = 'scalar',
 }
 
-export type BranchRuleOrBasic = BranchRuleIF | BranchTest | TypeEnum | FormEnum;
-
-export type BranchSchemaIF = BranchRuleOrBasic[] | BranchRuleOrBasic;
-
 export interface LeafIF {
   branch: BranchId;
   value: any;
@@ -95,4 +44,11 @@ export interface LeafIF {
 
 export interface WithTime {
   time: TimeValue;
+}
+
+export interface ChangeSet {
+  startTime: TimeValue;
+  endTime: TimeValue;
+  trees?: TreeId[];
+  branches: BranchId[];
 }

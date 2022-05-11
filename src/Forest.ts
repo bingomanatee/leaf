@@ -1,16 +1,10 @@
-import {
-  BranchIF,
-  ForestIF,
-  TreeId,
-  TreeIF,
-  TreeInit,
-} from './types';
-import { Tree } from './Tree';
+import { ForestIF } from './types';
 import EventEmitter from 'emitix';
-import { e } from './utils/tests';
+import { Schema } from './utils/Schema';
+import { BranchIF } from './types/branch.types';
+import { TreeId, TreeIF } from './types/tree.types';
+import { BranchId } from '../dist/types';
 import { Time } from './Time';
-import {ABSENT} from "./constants";
-import {Schema} from "./utils/Schema";
 
 /**
  * a Forest is a collection of 0 or more trees.
@@ -39,18 +33,11 @@ export class Forest
   public readonly id: symbol;
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  private readonly trees: TreeIF[] = [];
-  public get(id: TreeId) {
-    return this.trees.filter((tree: TreeIF) => tree.id === id);
-  }
-  public makeTree(props: TreeInit) {
-    const tree = new Tree({ ...props, forest: this });
-    this.trees.push(tree);
-    return tree;
-  }
-  public last(id: TreeId) {
-    return [...this.get(id)].pop();
-  }
+  public readonly trees: Map<TreeId, TreeIF> = new Map<TreeId, TreeIF>();
+
+  // -------------------- branchList -----------
+
+  branches: Map<BranchId, BranchIF[]> = new Map<BranchId, BranchIF[]>();
 
   // -------------------- events --------------
 
@@ -58,56 +45,25 @@ export class Forest
     this.emit('branch', branch, tree);
   }
 
-  _getBranchSchema(branch, tree) {
-    const trees = this.get(tree.id).sort(Time.byTime);
-    const branches = trees.reduce((br: BranchIF[], tree) => {
-      const treeBranch = tree.branch(branch.id);
-      if (treeBranch && treeBranch.schema) {
-        br.push(treeBranch);
-      }
-      return br;
-    }, []);
-
-    branches.push(branch);
-
-    return branches.sort(Time.byTime).pop()?.schema;
-  }
-
-  _getBranchValue(branch, tree) {
-    const trees = this.get(tree.id).sort(Time.byTime);
-    const branches = trees.reduce((br: BranchIF[], tree) => {
-      const treeBranch = tree.branch(branch.id);
-      if (treeBranch && 'value' in treeBranch) {
-        br.push(treeBranch);
-      }
-      return br;
-    }, []);
-
-    branches.push(branch);
-
-    return branches.sort(Time.byTime).pop()?.value;
+  private pushBranch(branch) {
+    const branchList = this.branches.get(branch);
+    if (Array.isArray(branchList)) {
+      if (!branchList.includes(branch))
+        this.branches.set(branch.id, [...branchList, branch].sort(Time.byTime));
+    } else {
+      this.branches.set(branch.id, [branch]);
+    }
   }
 
   _listen() {
-    this.on('branch', (branch, tree?) => {
-      if (!tree) {
-        tree = branch.tree;
-      }
+    this.on('branch', (branch, _tree?) => {
+      this.pushBranch(branch);
 
-      if (!tree) {
-        throw e('Cannot find tree for branch', { branch });
-      }
-
-      const schema = this._getBranchSchema(branch, tree);
-      const value = this._getBranchValue(branch, tree);
-
-      if (!schema || (value === ABSENT)) {
-        return;
-      }
-
-      const error = Schema.validate(schema, value);
-      if (error) {
-        branch.onError(error);
+      if (branch.schema && 'value' in branch) {
+        const error = Schema.validate(branch.schema, branch.value);
+        if (error) {
+          branch.onError(error);
+        }
       }
     });
   }

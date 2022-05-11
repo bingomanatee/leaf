@@ -1,4 +1,5 @@
-import { BranchId, LeafIF } from './types';
+import { LeafIF } from './types';
+import {BranchId} from "./types/branch.types";
 
 // may be deprecated - as a case of branch
 
