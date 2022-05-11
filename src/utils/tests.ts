@@ -262,3 +262,14 @@ export function testForType({ next, target }): string | null {
   }
   return out;
 }
+
+export function returnOrError(fn, ...args) {
+  if (typeof fn !== 'function') {
+    throw new Error('returnOrError MUST be passed a function');
+  }
+  try {
+    return fn(...args);
+  } catch (err) {
+    return err;
+  }
+}

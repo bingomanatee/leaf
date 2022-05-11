@@ -6,9 +6,11 @@ import {
   BranchSchemaIF,
   BranchUpdate,
   StateEnum,
+  TimeValue,
   TreeIF,
 } from './types';
 import { ABSENT } from './constants';
+import { Time } from './Time';
 
 export class Branch implements BranchIF {
   /**
@@ -41,6 +43,7 @@ export class Branch implements BranchIF {
       this.parent = parent;
     }
     this.state = StateEnum.new;
+    this.time = Time.next;
   }
 
   public readonly value: any;
@@ -51,6 +54,7 @@ export class Branch implements BranchIF {
   state: StateEnum;
   schema?: BranchSchemaIF;
   error = null;
+  time: TimeValue;
 
   public update(update: BranchUpdate): BranchIF {
     const props = {
@@ -61,5 +65,10 @@ export class Branch implements BranchIF {
       ...update,
     };
     return new Branch(props);
+  }
+
+  onError(err) {
+    this.error = err;
+    this.state = StateEnum.error;
   }
 }

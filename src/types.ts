@@ -12,11 +12,13 @@ export interface ForestIF {
   get(id: TreeId): TreeIF[];
   last(id: TreeId): TreeIF | undefined;
   makeTree(props: TreeInit): TreeIF;
+
+  onBranch(branch: BranchIF, tree?: TreeIF): void;
 }
 
 export type TimeValue = number;
 
-export interface TreeIF {
+export interface TreeIF extends WithTime {
   readonly time: TimeValue;
   forest?: ForestIF;
   id: TreeId;
@@ -35,7 +37,7 @@ export enum StateEnum {
 export type BranchId = symbol;
 export type BranchName = string | number;
 
-export interface BranchIF {
+export interface BranchIF extends WithTime {
   readonly tree?: TreeIF;
   id: BranchId;
   name: BranchName;
@@ -43,6 +45,7 @@ export interface BranchIF {
   state: StateEnum;
   update(update: BranchUpdate): BranchIF;
   value?: any;
+  onError(err): void;
 }
 
 export type BranchUpdate = {
@@ -81,13 +84,15 @@ export enum FormEnum {
   scalar = 'scalar',
 }
 
-export type BranchRuleOrBasic = BranchRuleIF | TypeEnum | FormEnum;
+export type BranchRuleOrBasic = BranchRuleIF | BranchTest | TypeEnum | FormEnum;
 
-export interface BranchSchemaIF {
-  readonly rules: BranchRuleOrBasic[];
-}
+export type BranchSchemaIF = BranchRuleOrBasic[] | BranchRuleOrBasic;
 
 export interface LeafIF {
   branch: BranchId;
   value: any;
+}
+
+export interface WithTime {
+  time: TimeValue;
 }

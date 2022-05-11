@@ -27,4 +27,5 @@ describe('Branch', () => {
       expect(branch.id).toBe(update.id);
     });
   });
+
 });

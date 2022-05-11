@@ -1,4 +1,6 @@
 import { Tree } from '../src/Tree';
+import { StateEnum, TypeEnum } from '../src/types';
+import { Forest } from '../src';
 
 describe('Tree', () => {
   describe('constructor', () => {
@@ -35,6 +37,28 @@ describe('Tree', () => {
         expect(updated.name).toBe(branch.name);
         expect(updated.value).toBe(2);
       }
+    });
+  });
+
+  describe('schema', () => {
+    describe('basic types', () => {
+      it('should accept branches of the right type when they have values', () => {
+        const forest = new Forest('wood');
+        const tree = forest.makeTree({
+          name: 'ent',
+        });
+        const last = tree.addBranch({
+          value: 'foo',
+          name: '',
+          schema: TypeEnum.string,
+        });
+
+        if (last) {
+          expect(last.state).toBe(StateEnum.good);
+        } else {
+          throw new Error('last not made');
+        }
+      });
     });
   });
 });

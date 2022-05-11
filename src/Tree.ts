@@ -67,6 +67,9 @@ export class Tree
 
   protected _listen() {
     this.on('branch', (branch: BranchIF) => {
+      if (this.forest) {
+        this.forest.onBranch(branch, this);
+      }
       // @TODO: merge with old content, test against schema, etc.
       this._branchMaps.set(branch.id, branch);
       this._branchMaps.set(branch.name, branch);
