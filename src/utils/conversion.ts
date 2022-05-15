@@ -1,15 +1,15 @@
 import {
-  isMap,
-  isObj,
-  isStr,
-  isNum,
-  e,
   detectForm,
-  isThere,
+  e,
   isArr,
   isFn,
+  isMap,
+  isNum,
+  isObj,
+  isStr,
+  isThere,
 } from './tests';
-import { FORM_ARRAY, FORM_MAP, FORM_OBJECT } from '../constants';
+import { FormEnum } from '../types';
 
 export function toMap(m: any, force = false) {
   if (m instanceof Map) {
@@ -93,18 +93,18 @@ export function makeValue(base, update) {
 
   let out = update;
   switch (baseType) {
-    case FORM_MAP:
+    case FormEnum.map:
       out = new Map(base);
       update.forEach((val, key) => {
         out.set(key, val);
       });
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       out = { ...base, ...update };
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       out = [...base];
       update.forEach((val, key) => {
         if (isThere(val)) {
@@ -116,7 +116,11 @@ export function makeValue(base, update) {
   return out;
 }
 
-export function mapReduce(map: Map<any, any>, fn: Function, initial: any = {}) {
+export function mapReduce(
+  map: Map<any, any>,
+  fn: (out: any, value: any, name: any, map: Map<any, any>) => any,
+  initial: any = {}
+) {
   if (isFn(initial)) {
     return mapReduce(map, fn, initial());
   }

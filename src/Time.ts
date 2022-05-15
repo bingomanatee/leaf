@@ -1,4 +1,4 @@
-import {TimeValue, WithTime} from './types';
+import { TimeValue, WithTime } from './types';
 
 export abstract class Time {
   static get next(): TimeValue {
@@ -17,6 +17,6 @@ export abstract class Time {
   }
 
   public static byTime(t1: WithTime, t2: WithTime) {
-   return  t2.time - t1.time;
+    return t2.time - t1.time;
   }
 }

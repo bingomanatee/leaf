@@ -1,15 +1,3 @@
-import { BranchId, BranchIF } from './types/branch.types';
-import { TreeId, TreeIF } from './types/tree.types';
-
-export type ForestId = symbol;
-
-export interface ForestIF {
-  id: ForestId;
-  trees: Map<TreeId, TreeIF>;
-  branches: Map<BranchId, BranchIF[]>;
-  onBranch(branch: BranchIF, tree?: TreeIF): void;
-}
-
 export type TimeValue = number;
 
 export enum StateEnum {
@@ -20,14 +8,13 @@ export enum StateEnum {
   error = 'error',
 }
 
-export type TestResult = boolean | string;
-
 export enum TypeEnum {
   string = 'string',
   number = 'number',
   date = 'date',
   null = 'null',
   symbol = 'symbol',
+  any = 'any',
 }
 
 export enum FormEnum {
@@ -35,13 +22,20 @@ export enum FormEnum {
   map = 'Map',
   object = 'object',
   scalar = 'scalar',
+  function = 'function',
 }
 
-export interface LeafIF {
-  branch: BranchId;
-  value: any;
-}
+export type DefEnum = TypeEnum | FormEnum;
 
 export interface WithTime {
   time: TimeValue;
 }
+
+export enum ChangeEnum {
+  set = 'set',
+  delete = 'delete',
+}
+
+export type valueKey = string | number | symbol;
+export type valueMap = Map<valueKey, any>;
+export type nodeID = string;

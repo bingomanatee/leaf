@@ -62,7 +62,8 @@
     "@types/lodash-es": "^4.17.6",
     "@typescript-eslint/parser": "4.1.1",
     "emitix": "^2.2.0",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "nanoid": "^3.3.4"
   },
   "resolutions": {
     "**/@typescript-eslint/eslint-plugin": "^4.1.1",

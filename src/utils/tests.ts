@@ -1,22 +1,10 @@
-import {
-  ABSENT,
-  FORM_ARRAY,
-  FORM_FUNCTION,
-  FORM_MAP,
-  FORM_OBJECT,
-  FORM_VALUE,
-  NAME_UNNAMED,
-  TYPE_ANY,
-  TYPE_DATE,
-  TYPE_NUMBER,
-  TYPE_STRING,
-  TYPE_SYMBOL,
-} from '../constants';
-
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { isNumber, sortBy } from 'lodash-es';
+import { DefEnum, FormEnum, TypeEnum } from '../types';
+import { ABSENT } from '../constants';
 
 export function isThere(item) {
-  return ![ABSENT, NAME_UNNAMED, undefined].includes(item);
+  return ![ABSENT, undefined].includes(item);
 }
 
 export const isNum = isNumber;
@@ -92,9 +80,9 @@ export function ucFirst(str) {
 class TypeDef {
   test: any;
   isForm: boolean;
-  name: symbol;
+  name: DefEnum;
   order: number;
-  constructor(name: symbol, test: any, isForm = false, order = 0) {
+  constructor(name: DefEnum, test: any, isForm = false, order = 0) {
     this.name = name;
     this.isForm = isForm;
     this.test = test;
@@ -104,16 +92,17 @@ class TypeDef {
 
 const ORDER_LAST = Number.POSITIVE_INFINITY;
 
+// @ts-ignore
 export const TESTS = new Map([
-  [FORM_MAP, new TypeDef(FORM_MAP, isMap, true, 0)],
-  [TYPE_SYMBOL, new TypeDef(TYPE_STRING, isSymbol, false, 3)],
-  [FORM_ARRAY, new TypeDef(FORM_ARRAY, isArr, true, 1)],
-  [FORM_FUNCTION, new TypeDef(FORM_FUNCTION, isFn, true, 2)],
-  [TYPE_DATE, new TypeDef(TYPE_DATE, isDate, false, 3)],
-  [FORM_OBJECT, new TypeDef(FORM_OBJECT, isObj, true, 4)],
-  [TYPE_STRING, new TypeDef(TYPE_STRING, isStr, false, 5)],
-  [TYPE_NUMBER, new TypeDef(TYPE_NUMBER, isNum, false, 6)],
-  [FORM_VALUE, new TypeDef(FORM_VALUE, () => null, true, ORDER_LAST)],
+  [FormEnum.map, new TypeDef(FormEnum.map, isMap, true, 0)],
+  [TypeEnum.symbol, new TypeDef(TypeEnum.symbol, isSymbol, false, 3)],
+  [FormEnum.array, new TypeDef(FormEnum.array, isArr, true, 1)],
+  [FormEnum.function, new TypeDef(FormEnum.function, isFn, true, 2)],
+  [TypeEnum.date, new TypeDef(TypeEnum.date, isDate, false, 3)],
+  [FormEnum.object, new TypeDef(FormEnum.object, isObj, true, 4)],
+  [TypeEnum.string, new TypeDef(TypeEnum.string, isStr, false, 5)],
+  [TypeEnum.number, new TypeDef(TypeEnum.number, isNum, false, 6)],
+  [FormEnum.scalar, new TypeDef(FormEnum.scalar, () => null, true, ORDER_LAST)],
 ]);
 
 const typeKeys = Array.from(TESTS.keys());
@@ -128,7 +117,7 @@ export function addTest(name, test, isForm = false, order = 0) {
  * detectForm is only concerned with containment patterns.
  * @param value
  */
-export function detectForm(value): symbol {
+export function detectForm(value): DefEnum {
   const tests = sortBy(Array.from(TESTS.values()), 'order');
   for (let i = 0; i < tests.length; ++i) {
     const def: TypeDef = tests[i];
@@ -138,14 +127,16 @@ export function detectForm(value): symbol {
     }
   }
 
-  return FORM_VALUE;
+  return FormEnum.scalar;
 }
 
 export function isCompound(type) {
   if (!typeKeys.includes(type)) {
     type = detectType(type);
   }
-  return [FORM_ARRAY, FORM_MAP, FORM_OBJECT].includes(type);
+  return [FormEnum.map, FormEnum.map, FormEnum.array, FormEnum.object].includes(
+    type
+  );
 }
 
 export function detectType(value) {
@@ -160,26 +151,26 @@ export function detectType(value) {
   return detectForm(value);
 }
 
-export function hasKey(value, key, vType?: symbol) {
+export function hasKey(value, key, vType?: DefEnum) {
   if (!vType) {
     return hasKey(value, key, detectForm(value));
   }
 
   let isInValue = false;
   switch (vType) {
-    case FORM_VALUE:
+    case FormEnum.scalar:
       isInValue = false;
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       isInValue = key in value;
       break;
 
-    case FORM_MAP:
+    case FormEnum.map:
       isInValue = value.has(key);
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       if (!isArr(value) || isWhole(key)) {
         isInValue = false;
       } else {
@@ -206,21 +197,21 @@ export function amend(value, change, form: string | symbol = ABSENT) {
   }
   let out = value;
   switch (form) {
-    case FORM_MAP:
+    case FormEnum.map:
       out = new Map(value);
       change.forEach((keyValue, key) => {
         out.set(key, keyValue);
       });
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       out = { ...value };
       Object.keys(change).forEach(key => {
         out[key] = change[key];
       });
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       out = [...value];
       change.forEach((item, index) => {
         out[index] = item;
@@ -238,13 +229,13 @@ const FIND_SYMBOL = /Symbol\((.*:)?(.*)\)/;
  * @param target
  */
 export function testForType({ next, target }): string | null {
-  if (target.type === TYPE_ANY) return null;
+  if (target.type === TypeEnum.any) return null;
   let out: any = null;
   if (!target.type) {
     out = null;
   } else if (isFn(target.type)) {
     out = target.type(next);
-  } else if (target.type === FORM_VALUE) {
+  } else if (target.type === FormEnum.scalar) {
     out = null;
   } else {
     const nextType = detectType(next);

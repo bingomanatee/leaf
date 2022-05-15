@@ -1,5 +1,3 @@
-import { Leaf } from './Leaf';
-import { Time } from './Time';
 import { Forest } from './Forest';
-
-export { Leaf, Time, Forest };
+import Node, { NodeChange } from './Node';
+export { Forest, Node, NodeChange };
