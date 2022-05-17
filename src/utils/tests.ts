@@ -108,6 +108,13 @@ export const TESTS = new Map([
 const typeKeys = Array.from(TESTS.keys());
 let tests = sortBy(Array.from(TESTS.values()), 'order');
 
+/**
+ * allow custom form/type definitions by application developer;
+ * @param name
+ * @param test
+ * @param isForm
+ * @param order
+ */
 export function addTest(name, test, isForm = false, order = 0) {
   TESTS.set(name, new TypeDef(name, test, isForm, order));
   tests = sortBy(Array.from(TESTS.values()), 'order');
@@ -127,7 +134,7 @@ export function detectForm(value): DefEnum {
     }
   }
 
-  return FormEnum.scalar;
+  return FormEnum.any;
 }
 
 export function isCompound(type) {

@@ -7,6 +7,7 @@ import {
   configKey,
   configMap,
   configType,
+  FormEnum,
   nanoID,
   nodeIdMap,
 } from '../types';
@@ -16,7 +17,14 @@ import { ABSENT, DELETE } from '../constants';
 import { NodeConfigChange } from './NodeConfigChange';
 import { Stateful } from '../Stateful';
 import { NodeValueChange } from './NodeValueChange';
-import { detectForm, isCompound, isThere } from '../utils/tests';
+import {
+  detectForm,
+  detectType,
+  e,
+  isCompound,
+  isFn,
+  isThere,
+} from '../utils/tests';
 import { clone, setKey } from '../utils/compound';
 import { toMap } from '../utils/conversion';
 import createId from '../utils/createId';
@@ -50,6 +58,11 @@ export default class Node extends Stateful implements branchable {
     this._configs = toMap(configs);
     this.time = Time.next;
     this.forest = forest;
+
+    // in the absence of user-defined type or form constraints, constrain by initial form
+    if (!(this.configs?.has('form') || this.configs?.has('type'))) {
+      this.config('form', detectForm(this.value));
+    }
   }
 
   /* ----------- configs ---------------- */
@@ -71,8 +84,9 @@ export default class Node extends Stateful implements branchable {
     return this.changeConfig(new Map([[key, DELETE]]));
   }
 
-  changeConfig(changes: configType) {
+  changeConfig(changes: configType): NodeConfigChange {
     const next = toMap(this.configs, true);
+
     toMap(changes).forEach((value, key) => {
       if (value === DELETE) {
         next.delete(key);
@@ -80,6 +94,7 @@ export default class Node extends Stateful implements branchable {
         next.set(key, value);
       }
     });
+
     const change = new NodeConfigChange(this.id, next, this.configs);
     this._configs = next;
     return change;
@@ -244,5 +259,51 @@ export default class Node extends Stateful implements branchable {
 
   deleteParent(targetId) {
     if (this.forest) this.forest.branch(targetId, this.id, true);
+  }
+
+  private _validateForm() {
+    const form = this.configs?.get('form');
+    if (!form) return;
+    if (form === FormEnum.any) {
+      return;
+    }
+
+    if (isFn(form)) {
+      const err = form(this.value);
+      if (err) throw err;
+    }
+
+    if (detectForm(this.value) !== form) {
+      throw e('node value is not correct form', {
+        node: this,
+        form,
+        value: this.value,
+      });
+    }
+  }
+
+  _validateType() {
+    const type = this.configs?.get('form');
+    if (!type) return;
+    if (type === FormEnum.any) {
+      return;
+    }
+
+    if (isFn(type)) {
+      const err = type(this.value);
+      if (err) throw err;
+    }
+
+    if (detectType(this.value) !== type) {
+      throw e('node value is not correct type', {
+        node: this,
+        type,
+        value: this.value,
+      });
+    }
+  }
+  validate() {
+    this._validateForm();
+    this._validateType();
   }
 }

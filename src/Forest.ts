@@ -130,7 +130,11 @@ export class Forest extends EventEmitter {
       this.emit('validateNodes');
     });
     this.on('validateNodes', () => {
-      // todo: test validation
+      this.nodes.forEach(node => {
+        if (node.isActive) {
+          node.validate();
+        }
+      });
     });
   }
 

@@ -25,6 +25,7 @@ export enum FormEnum {
   object = 'object',
   scalar = 'scalar',
   function = 'function',
+  any = 'any',
 }
 
 export type DefEnum = TypeEnum | FormEnum;

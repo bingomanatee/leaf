@@ -1,103 +1,86 @@
-# TSDX User Guide
+# Forest: the state database
 
-Congrats! You just saved yourself hours of work by bootstrapping this project with TSDX. Let’s get you oriented with what’s here and how to use it.
+Forest uses graph-node state management to create and manage state and notification. Branches are stored independently
+in indexed maps, and values and configurations are stored in node objects lined via branches. 
 
-> This TSDX setup is meant for developing libraries (not apps!) that can be published to NPM. If you’re looking to build a Node app, you could use `ts-node-dev`, plain `ts-node`, or simple `tsc`.
+This classic pattern allows an open-ended design pattern with tunable value validation; you can use generation patterns
+to create sub-nodes, allowing for easy testing and code reuse. 
 
-> If you’re new to TypeScript, checkout [this handy cheatsheet](https://devhints.io/typescript)
+Forest was designed initially for React but is suitable for any JS application; it doesn't depend on any [version of] React
+and has a very small footprint of project interdependencies. 
 
-## Commands
+## Advantages of Forest
 
-TSDX scaffolds your new library inside `/src`.
+### Synchronous Changes 
 
-To run TSDX, use:
+Unlike Redux, all changes are immediate; errors are thrown or values are changed in real time, allowing you to immediately
+inspect the consequences of your actions in linear fashion
 
-```bash
-npm start # or yarn start
-```
+## Highly Testable State
 
-This builds to `/dist` and runs the project in watch mode so any edits you save inside `src` causes a rebuild to `/dist`.
+The graph based nature of state (and the synchronous changes) make it easy to develop tests for Forest based applications. 
 
-To do a one-off build, use `npm run build` or `yarn build`.
+## Flexible validation
 
-To run tests, use `npm test` or `yarn test`.
+### Form validation
+By default, all values in a node are locked in by **form** -- 
+that is you cannot change an array into an object, but you can use strings and numbers interchangeably. 
+This is in part because branch values are injected into node values if the value
+is a compound form (Map, Array, Object) but not for non-compound (scalar) forms; keys that are appropriate for Maps, 
+for instance, are not appropriate for Arrays or in some cases, Objects. 
 
-## Configuration
+### Type Validation
 
-Code quality is set up for you with `prettier`, `husky`, and `lint-staged`. Adjust the respective fields in `package.json` accordingly.
+You can opt to use more strict Type based validation - 
+in which case you can *not* replace a number with a string or vice versa.
+Also, you can define your own functional test that must pass (return falsy) for updates to be accepted. 
 
-### Jest
+In all cases, type errors throw, and if not caught may bring down an entire transaction. 
 
-Jest tests are set up to run with `npm test` or `yarn test`.
+You can disable default (all) validations by asserting the configuration 'form' -> 'any', in which case no type checking
+will occur and all values are acceptable, putting the onus of keeping your state types properly maintained on yourself. 
 
-### Bundle Analysis
+### Manual validation
 
-[`size-limit`](https://github.com/ai/size-limit) is set up to calculate the real cost of your library with `npm run size` and visualize the bundle with `npm run analyze`.
+You can for instance define selector branches to indicate the validity of a branch, which will flag bad values 
+but will allow them to be written to state; good for forms in which you may want to allow the user to type a value,
+but alert them to the status of their value with on-screen prompts. 
 
-#### Setup Files
+## Amazingly complete logging
 
-This is the folder structure we set up for you:
+Every change of state is kept in a historical array, which lets you diagnose change and consequences. 
 
-```txt
-/src
-  index.tsx       # EDIT THIS
-/test
-  blah.test.tsx   # EDIT THIS
-.gitignore
-package.json
-README.md         # EDIT THIS
-tsconfig.json
-```
+Branch creation, value changes, node creation and configuration changes each trigger a loggable event allowing for 
+fine-grained trail of action that defines your current state. 
 
-### Rollup
+## Reusable patterns
 
-TSDX uses [Rollup](https://rollupjs.org) as a bundler and generates multiple rollup configs for various module formats and build settings. See [Optimizations](#optimizations) for details.
+As a graph based system, you can reuse design patterns across your application; if you have a field management system
+you like, you can turn it into a function and implement it across your application. By contrast it is very difficult to
+reuse patterns in a hook / redux based system, due to the nature of their architectures.
 
-### TypeScript
+## The inner workings of forest
 
-`tsconfig.json` is set up to interpret `dom` and `esnext` types, as well as `react` for `jsx`. Adjust according to your needs.
+I have iterated on state management for years; but this represents a pivot to a database driven approach to state representation.
+A lot of the features I want in state are already part of the database design standard: schema, transactions, open graphs. 
 
-## Continuous Integration
+Rather than create a set of complex referentially joined objects to accomplish this, I decided to try a database approach,
+using index reference rather than object joins. Object references are problematic, and make erasing objects in memory 
+problematic. In Forest, there is only one place that objects are stored by reference-the Forest. Objects are stored in 
+"by type" maps (nodes, branches) and in the history branch. 
 
-### GitHub Actions
+### Time to play B sides
 
-Two actions are added by default:
+Every object is created in a unique "time" slot - time is an ever-increasing posint, and objects are stored by that index
+in the history map. If rollbacks are necessary, a range of objects are cancelled, and all caches recreate their computations
+without them. 
 
-- `main` which installs deps w/ cache, lints, tests, and builds on all pushes against a Node and OS matrix
-- `size` which comments cost comparison of your library on every pull request using [`size-limit`](https://github.com/ai/size-limit)
+Object caches are busted everytime that the "time" changes -- rather than doing complex calculations and only busting
+caches when the known dependencies change, its assumed that any cached value *might* change if something changes, and
+they are recreated and saved until the next time-based change. 
 
-## Optimizations
+## Emitter based management
 
-Please see the main `tsdx` [optimizations docs](https://github.com/palmerhq/tsdx#optimizations). In particular, know that you can take advantage of development-only optimizations:
+Changes trigger updates of content, and notifications emit to trigger validation routines. This is enabled with emitix,
+an optimized rebuild of the Node.js EventEmitter class. 
 
-```js
-// ./types/index.d.ts
-declare var __DEV__: boolean;
-
-// inside your code...
-if (__DEV__) {
-  console.log('foo');
-}
-```
-
-You can also choose to install and use [invariant](https://github.com/palmerhq/tsdx#invariant) and [warning](https://github.com/palmerhq/tsdx#warning) functions.
-
-## Module Formats
-
-CJS, ESModules, and UMD module formats are supported.
-
-The appropriate paths are configured in `package.json` and `dist/index.js` accordingly. Please report if any issues are found.
-
-## Named Exports
-
-Per Palmer Group guidelines, [always use named exports.](https://github.com/palmerhq/typescript#exports) Code split inside your React app instead of your React library.
-
-## Including Styles
-
-There are many ways to ship styles, including with CSS-in-JS. TSDX has no opinion on this, configure how you like.
-
-For vanilla CSS, you can include it at the root directory and add it to the `files` section in your `package.json`, so that it can be imported separately by your users and run through their bundler's loader.
-
-## Publishing to NPM
-
-We recommend using [np](https://github.com/sindresorhus/np).
