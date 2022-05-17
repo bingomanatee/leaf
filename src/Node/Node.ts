@@ -66,7 +66,7 @@ export default class Node extends Stateful implements branchable {
   }
 
   changeConfig(changes: configType) {
-    const next = new Map(this.configs);
+    const next = toMap(this.configs, true);
     toMap(changes).forEach((value, key) => {
       if (value === DELETE) {
         next.delete(key);
