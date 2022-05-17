@@ -102,7 +102,7 @@ export const TESTS = new Map([
   [FormEnum.object, new TypeDef(FormEnum.object, isObj, true, 4)],
   [TypeEnum.string, new TypeDef(TypeEnum.string, isStr, false, 5)],
   [TypeEnum.number, new TypeDef(TypeEnum.number, isNum, false, 6)],
-  [FormEnum.scalar, new TypeDef(FormEnum.scalar, () => null, true, ORDER_LAST)],
+  [FormEnum.scalar, new TypeDef(FormEnum.scalar, () => true, true, ORDER_LAST)],
 ]);
 
 const typeKeys = Array.from(TESTS.keys());
@@ -134,7 +134,7 @@ export function detectForm(value): DefEnum {
     }
   }
 
-  return FormEnum.any;
+  return FormEnum.scalar;
 }
 
 export function isCompound(type) {

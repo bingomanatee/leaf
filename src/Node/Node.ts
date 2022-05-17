@@ -44,6 +44,7 @@ export default class Node extends Stateful implements branchable {
   forest?: Forest;
   private _configs?: configMap;
   private _value: any;
+  private _created = false;
 
   constructor(
     value: any,
@@ -61,8 +62,10 @@ export default class Node extends Stateful implements branchable {
 
     // in the absence of user-defined type or form constraints, constrain by initial form
     if (!(this.configs?.has('form') || this.configs?.has('type'))) {
-      this.config('form', detectForm(this.value));
+      const form = detectForm(this.value);
+      this.config('form', form);
     }
+    this._created = true;
   }
 
   /* ----------- configs ---------------- */
@@ -273,17 +276,20 @@ export default class Node extends Stateful implements branchable {
       if (err) throw err;
     }
 
-    if (detectForm(this.value) !== form) {
-      throw e('node value is not correct form', {
+    const valueForm = detectForm(this.value);
+    if (valueForm !== form) {
+      const notes = {
         node: this,
         form,
+        valueForm,
         value: this.value,
-      });
+      };
+      throw e('node value is not correct form', notes);
     }
   }
 
   _validateType() {
-    const type = this.configs?.get('form');
+    const type = this.configs?.get('type');
     if (!type) return;
     if (type === FormEnum.any) {
       return;
@@ -295,14 +301,16 @@ export default class Node extends Stateful implements branchable {
     }
 
     if (detectType(this.value) !== type) {
-      throw e('node value is not correct type', {
+      const notes = {
         node: this,
         type,
         value: this.value,
-      });
+      };
+      throw e('node value is not correct type', notes);
     }
   }
   validate() {
+    if (!this._created) return;
     this._validateForm();
     this._validateType();
   }

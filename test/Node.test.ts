@@ -4,19 +4,22 @@ import { Branch } from '../src/Branch';
 import { Forest } from '../src';
 
 describe('Node', () => {
-  describe('constructor', () => {
+  beforeEach(() => {
     Time.clear();
+  });
+  afterEach(() => {
+    Time.clear();
+  });
+  describe('constructor', () => {
     it('has an id', () => {
       const node = new Node(null);
       expect(typeof node.id).toBe('string');
       expect(node.id).toBeTruthy();
     });
-    Time.clear();
   });
 
   describe('configs', () => {
     it('accepts single change', () => {
-      Time.clear();
       const node = new Node(null, 'node', new Map([['vey', 100]]));
 
       expect(node.config('foo')).toBeUndefined();
@@ -30,7 +33,6 @@ describe('Node', () => {
       expect(node.config('bar')).toBe(12);
       expect(node.config('foo')).toBe(3);
       expect(node.config('vey')).toBe(100);
-      Time.clear();
     });
 
     it('accepts multi change', () => {
@@ -49,7 +51,6 @@ describe('Node', () => {
 
     describe('delete', () => {
       it('removes configs', () => {
-        Time.clear();
         const node = new Node(
           null,
           'node',
@@ -66,13 +67,11 @@ describe('Node', () => {
         expect(node.hasConfig('foo')).toBeFalsy();
         expect(node.hasConfig('bar')).toBeTruthy();
       });
-      Time.clear();
     });
   });
 
   describe('branches', () => {
     it('adds the correct parent/child keys', () => {
-      Time.clear();
       const forest = new Forest();
       const n1 = forest.makeNode(null, 'n1');
       const n2 = forest.makeNode(null, 'n2');
@@ -84,12 +83,9 @@ describe('Node', () => {
 
       expect(n2.parents).toEqual([n1.id]);
       expect(n2.children).toEqual([]);
-
-      Time.clear();
     });
 
     it('allows multiple keys', () => {
-      Time.clear();
       const forest = new Forest();
       const n1 = forest.makeNode(null, 'n1');
       const n2 = forest.makeNode(null, 'n2');
@@ -122,13 +118,11 @@ describe('Node', () => {
 
       expect(n5.parents).toEqual([n4.id]);
       expect(n5.children).toEqual([]);
-
-      Time.clear();
     });
 
     it('accepts multiple additions', () => {
       const forest = new Forest();
-      Time.clear();
+
       const n1 = forest.makeNode(null, 'n1');
       const n2 = forest.makeNode(null, 'n2');
       const n3 = forest.makeNode(null, 'n3');
@@ -165,8 +159,6 @@ describe('Node', () => {
 
       expect(n5.parents).toEqual([n4.id, n1.id].sort());
       expect(n5.children).toEqual([]);
-
-      Time.clear();
     });
 
     it('asserts the child values into their parent', () => {
@@ -196,6 +188,22 @@ describe('Node', () => {
           ['beta', 40],
         ])
       );
+    });
+  });
+
+  describe(',validate', () => {
+    describe('default; initial form', () => {
+      const forest = new Forest();
+      const node = forest.makeNode('one', 'defaultValidation');
+      node.next(2);
+      node.validate();
+
+      expect(node.value).toBe(2);
+
+      expect(() => {
+        forest.changeNodeValue(node.id, []);
+      }).toThrow('node value is not correct form');
+      expect(node.value).toBe(2);
     });
   });
 });

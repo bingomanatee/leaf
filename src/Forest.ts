@@ -30,7 +30,7 @@ export class Forest extends EventEmitter {
     this._listenForTrans();
   }
 
-  makeNode(value, name, configs?: configType): Node {
+  makeNode(value, name?, configs?: configType): Node {
     const node = new Node(value, name, configs, this);
     this.history.set(node.time, node);
     this.emit('node', node);
@@ -76,7 +76,8 @@ export class Forest extends EventEmitter {
         }
       } catch (err) {
         change.fail(err);
-        target.revertConfig(change);
+        target.next(change.current);
+        throw err;
       }
       //todo: broadcast, resolve change;
       return change;
