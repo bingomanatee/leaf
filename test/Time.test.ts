@@ -3,7 +3,7 @@ import { Time } from '../src/Time';
 describe('Time', () => {
   it('should start at second zero', () => {
     Time.clear();
-    expect(Time.second).toBe(0);
+    expect(Time.now).toBe(0);
     Time.clear();
   });
 

@@ -1,22 +1,23 @@
-import { TimeValue, WithTime } from './types';
+import { timeValue, timeObj } from './types';
 
 export abstract class Time {
-  static get next(): TimeValue {
-    Time._second += 1;
-    return Time.second;
+  protected static _now = 0;
+  public static readonly NEVER_TIME = -1;
+
+  static get next(): timeValue {
+    Time._now += 1;
+    return Time.now;
   }
 
-  protected static _second = 0;
-
-  static get second(): TimeValue {
-    return Time._second;
+  static get now(): timeValue {
+    return Time._now;
   }
 
   public static clear() {
-    Time._second = 0;
+    Time._now = 0;
   }
 
-  public static byTime(t1: WithTime, t2: WithTime) {
+  public static byTime(t1: timeObj, t2: timeObj) {
     return t2.time - t1.time;
   }
 }

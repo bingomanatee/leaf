@@ -1,3 +1,4 @@
 import { Forest } from './Forest';
-import Node, { NodeChange } from './Node';
-export { Forest, Node, NodeChange };
+import Node from './Node/Node';
+import {NodeConfigChange} from "./Node/NodeConfigChange";
+export { Forest, Node, NodeConfigChange };

@@ -1,23 +1,17 @@
-import {
-  ABSENT,
-  FORM_ARRAY,
-  FORM_MAP,
-  FORM_OBJECT,
-  TYPE_DATE,
-} from '../constants';
 import { detectForm, detectType, isThere } from './tests';
+import { DefEnum, FormEnum, TypeEnum } from '../types';
 
-export function setKey(target, keyValue, key, form: string | symbol = ABSENT) {
+export function setKey(target, keyValue, key, form?: DefEnum) {
   if (!isThere(form)) {
     form = detectForm(target);
   }
   const out = target;
   switch (form) {
-    case FORM_MAP:
+    case FormEnum.map:
       out.set(key, keyValue);
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       try {
         out[key] = keyValue;
       } catch (err) {
@@ -25,53 +19,53 @@ export function setKey(target, keyValue, key, form: string | symbol = ABSENT) {
       }
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       out[key] = keyValue;
       break;
   }
   return out;
 }
 
-export function clone(value, type: symbol | string = ABSENT) {
+export function clone(value, type?: DefEnum) {
   if (!isThere(type)) {
     type = detectType(value);
   }
   let out = value;
   switch (type) {
-    case FORM_MAP:
+    case FormEnum.map:
       out = new Map(value);
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       out = { ...value };
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       out = [...value];
       break;
 
-    case TYPE_DATE:
+    case TypeEnum.date:
       out = new Date(value);
       break;
   }
   return out;
 }
 
-export function iterate(value, fn, type: symbol | string = ABSENT) {
+export function iterate(value, fn, type?: DefEnum) {
   if (!isThere(type)) {
     type = detectForm(value);
   }
 
   switch (type) {
-    case FORM_MAP:
+    case FormEnum.map:
       value.forEach(fn);
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       Object.keys(value).forEach(key => fn(value[key], key));
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       value.forEach(fn);
       break;
 
@@ -80,22 +74,23 @@ export function iterate(value, fn, type: symbol | string = ABSENT) {
   }
 }
 
-export function makeNew(type, isInstance = false) {
+// deprecated -- use create
+export function makeNew(type: DefEnum, isInstance = false) {
   if (isInstance) {
     return makeNew(detectForm(type));
   }
 
   let out: any = null;
   switch (type) {
-    case FORM_MAP:
+    case FormEnum.map:
       out = new Map();
       break;
 
-    case FORM_ARRAY:
+    case FormEnum.array:
       out = [];
       break;
 
-    case FORM_OBJECT:
+    case FormEnum.object:
       out = {};
       break;
   }

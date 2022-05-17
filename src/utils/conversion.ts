@@ -9,18 +9,26 @@ import {
   isStr,
   isThere,
 } from './tests';
-import { FormEnum } from '../types';
+import { DefEnum, FormEnum, TypeEnum } from '../types';
 
-export function toMap(m: any, force = false) {
+/**
+ * @returns {Map}  a javascript Map instance, with the same content as the input
+ *
+ * @param m {any} any object - ideally, a compound
+ *    in which case the return value has the same key/value content
+ * @param cloneMe {boolean} if a map is passed the same map will be returned --
+ *    UNLESS cloneMe is true, in which case an identical copy is returned
+ */
+export function toMap(m: any, cloneMe = false) {
   if (m instanceof Map) {
-    return force ? new Map(m) : m;
+    return cloneMe ? new Map(m) : m;
   }
   const map = new Map();
   if (isArr(m)) {
-    for (let i = 0; i < m.length; ++i) {
-      map.set(i, m[i]);
-    }
-  } else if (isObj(m)) Object.keys(m).forEach(key => map.set(key, m[key]));
+    m.forEach((value, index) => map.set(index, value));
+  } else if (isObj(m)) {
+    Object.keys(m).forEach(key => map.set(key, m[key]));
+  } // else - return empty map
   return map;
 }
 
@@ -111,6 +119,43 @@ export function makeValue(base, update) {
           out[key] = val;
         }
       });
+      break;
+  }
+  return out;
+}
+
+/**
+ * creates a platonic
+ */
+export function create(de: DefEnum) {
+  let out: any = undefined;
+  switch (de) {
+    case FormEnum.map:
+      out = new Map();
+      break;
+
+    case FormEnum.object:
+      out = {};
+      break;
+
+    case FormEnum.array:
+      out = [];
+      break;
+
+    case TypeEnum.number:
+      out = 0;
+      break;
+
+    case TypeEnum.date:
+      out = new Date();
+      break;
+
+    case TypeEnum.string:
+      out = '';
+      break;
+
+    case TypeEnum.null:
+      out = null;
       break;
   }
   return out;

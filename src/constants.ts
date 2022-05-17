@@ -4,3 +4,6 @@ export const TIME = Symbol('time');
 export const VALUES = Symbol('values');
 export const DELETE = Symbol('delete');
 export const CIRCULAR = Symbol('circular');
+export const INITIAL_NODE_VALUE = Symbol('initial-node-value');
+export const NODE_VALUE = Symbol('node-value');
+export const NODE_TYPE = Symbol('node-type');
