@@ -3,6 +3,7 @@
 import {
   branchable,
   branchObj,
+  compoundKey,
   configKey,
   configMap,
   configType,
@@ -24,7 +25,7 @@ import { Branch } from '../Branch';
 
 export default class Node extends Stateful implements branchable {
   readonly time: number;
-  name?: configKey;
+  name?: compoundKey;
 
   get configs(): configMap | undefined {
     return this._configs;
@@ -36,7 +37,12 @@ export default class Node extends Stateful implements branchable {
   private _configs?: configMap;
   private _value: any;
 
-  constructor(value, name?: configKey, configs?: configType, forest?: Forest) {
+  constructor(
+    value: any,
+    name?: compoundKey,
+    configs?: configType,
+    forest?: Forest
+  ) {
     super();
     this.id = createId(name);
     this.name = name;
@@ -91,13 +97,23 @@ export default class Node extends Stateful implements branchable {
     return valueChange;
   }
 
+  private _valueCache;
   get value(): any {
     // todo: decorate with branches etc.
-    return this.netValue();
+    if (!this._valueCache) {
+      this._valueCache = cache({
+        generator: target => {
+          return target.netValue();
+        },
+        afterInactive: () => undefined,
+        target: this,
+      });
+    }
+    return this._valueCache();
   }
 
   /**
-   * the value of this node - adjusted for any values of its tree children.
+   * the value of this node - appended with any values of its tree children.
    * @param network
    */
   netValue(network?: Set<nanoID>): any {
@@ -107,14 +123,12 @@ export default class Node extends Stateful implements branchable {
     }
     let netValue = clone(baseValue);
     const form = detectForm(baseValue);
-    const childValues = this.childValues(network);
-    childValues.forEach(({ child, value }, childId) => {
+    this.eachChild((child, childId) => {
       if (!network?.has(childId)) {
-        netValue = setKey(netValue, value, child.name, form);
+        netValue = setKey(netValue, child.netValue(network), child.name, form);
       }
       network?.add(childId);
     });
-    // @todo: cache;
     return netValue;
   }
 
@@ -150,25 +164,7 @@ export default class Node extends Stateful implements branchable {
   /* --------- branches --------------- */
 
   private _parentCache?: () => nanoID[];
-
   get parents(): nanoID[] {
-    /*   
- if (this.isActive && this.forest) {
-      return this.forest.branches
-        .filter(branch => {
-          return branch.isActive && branch.dest === this.id;
-        })
-        .reduce((list: branchObj[], branch) => {
-          if (branch.del) {
-            return list.filter(foundBranch => !branch.eq(foundBranch));
-          }
-          list.push(branch);
-          return list;
-        }, [])
-        .map(branch => branch.source)
-        .sort();
-    }
-    return [];*/
     if (!this._parentCache) {
       this._parentCache = cache({
         target: this,

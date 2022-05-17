@@ -63,3 +63,5 @@ export type branchObj = {
   del?: boolean;
 } & statefulObj &
   timeObj;
+
+export type compoundKey = string | number;

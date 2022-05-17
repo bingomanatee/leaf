@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import Node from './Node/Node';
 import {
   branchObj,
+  compoundKey,
   configMap,
   configType,
   nanoID,
@@ -99,6 +100,16 @@ export class Forest extends EventEmitter {
     this.addBranch(branch);
     return branch;
   }
+  makeChildNode(
+    rootId: nanoID,
+    value: any,
+    name: compoundKey,
+    config?: configType
+  ) {
+    const node = this.makeNode(value, name, config);
+    this.branch(rootId, node.id);
+    return node;
+  }
   branchNodes(n1: nanoIdObj, n2: nanoIdObj, del = false): branchObj {
     return this.branch(n1.id, n2.id, del);
   }
@@ -167,12 +178,6 @@ export class Forest extends EventEmitter {
         }
       }
       this.emit('compute');
-    });
-
-    this.on('validate', () => {
-      this.nodes.forEach((_node: Node) => {
-        // const value = node.get(VALUES);
-      });
     });
   }
 

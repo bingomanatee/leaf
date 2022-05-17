@@ -14,7 +14,7 @@ describe('Node', () => {
     Time.clear();
   });
 
-  describe('change', () => {
+  describe('configs', () => {
     it('accepts single change', () => {
       Time.clear();
       const node = new Node(null, 'node', new Map([['vey', 100]]));
@@ -46,31 +46,31 @@ describe('Node', () => {
       expect(node.config('bar')).toBe(12);
       expect(node.config('foo')).toBe(3);
     });
-  });
 
-  describe('delete', () => {
-    it('removes configs', () => {
+    describe('delete', () => {
+      it('removes configs', () => {
+        Time.clear();
+        const node = new Node(
+          null,
+          'node',
+          new Map([
+            ['foo', 3],
+            ['bar', 12],
+          ])
+        );
+        node.debug = true;
+
+        expect(node.hasConfig('foo')).toBeTruthy();
+        expect(node.hasConfig('bar')).toBeTruthy();
+        node.deleteConfig('foo');
+        expect(node.hasConfig('foo')).toBeFalsy();
+        expect(node.hasConfig('bar')).toBeTruthy();
+      });
       Time.clear();
-      const node = new Node(
-        null,
-        'node',
-        new Map([
-          ['foo', 3],
-          ['bar', 12],
-        ])
-      );
-      node.debug = true;
-
-      expect(node.hasConfig('foo')).toBeTruthy();
-      expect(node.hasConfig('bar')).toBeTruthy();
-      node.deleteConfig('foo');
-      expect(node.hasConfig('foo')).toBeFalsy();
-      expect(node.hasConfig('bar')).toBeTruthy();
     });
-    Time.clear();
   });
 
-  describe('.branches', () => {
+  describe('branches', () => {
     it('adds the correct parent/child keys', () => {
       Time.clear();
       const forest = new Forest();
@@ -167,6 +167,35 @@ describe('Node', () => {
       expect(n5.children).toEqual([]);
 
       Time.clear();
+    });
+
+    it('asserts the child values into their parent', () => {
+      const forest = new Forest();
+
+      const root = forest.makeNode(
+        new Map([
+          ['alpha', 1],
+          ['omega', 1000],
+        ]),
+        ''
+      );
+      const beta = forest.makeChildNode(root.id, 2, 'beta');
+      expect(root.value).toEqual(
+        new Map([
+          ['alpha', 1],
+          ['omega', 1000],
+          ['beta', 2],
+        ])
+      );
+
+      beta.next(40);
+      expect(root.value).toEqual(
+        new Map([
+          ['alpha', 1],
+          ['omega', 1000],
+          ['beta', 40],
+        ])
+      );
     });
   });
 });
