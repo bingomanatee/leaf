@@ -35,7 +35,7 @@ export interface timeObj {
 
 export type configKey = string | number | symbol;
 export type configMap = Map<configKey, any>;
-export type configObj = configMap | { [key: configKey]: any };
+export type configObj = configMap | { [key: string]: any };
 export type configType = configObj | configMap;
 export type nanoID = string;
 export type nodeIdMap = Map<nanoID, any>;
