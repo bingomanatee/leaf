@@ -34,6 +34,7 @@ import { Branch } from '../Branch';
 export default class Node extends Stateful implements branchable {
   readonly time: number;
   name?: compoundKey;
+  private _observer: any;
 
   get configs(): configMap | undefined {
     return this._configs;
@@ -313,5 +314,15 @@ export default class Node extends Stateful implements branchable {
     if (!this._created) return;
     this._validateForm();
     this._validateType();
+  }
+
+  subscribe(listener) {
+    if (!this.forest) {
+      throw e('cannot listen to node without forest', { node: this });
+    }
+    if (!this._observer) {
+      this._observer = this.forest.nodeValueSubject(this.id);
+    }
+    return this._observer.subscribe(listener);
   }
 }

@@ -8,6 +8,7 @@ import {
   nanoID,
   nanoIdObj,
   StateEnum,
+  timeObj,
   timeValue,
 } from './types';
 import { Branch } from './Branch';
@@ -15,6 +16,15 @@ import EventEmitter from 'emitix';
 import { Trans } from './Trans';
 import { Time } from './Time';
 import { NodeConfigChange } from './Node/NodeConfigChange';
+import {
+  BehaviorSubject,
+  combineLatest,
+  distinctUntilChanged,
+  filter,
+  map,
+} from 'rxjs';
+import { e } from './utils/tests';
+import { NodeValueChange } from './Node/NodeValueChange';
 
 export class Forest extends EventEmitter {
   readonly name: string;
@@ -25,6 +35,7 @@ export class Forest extends EventEmitter {
   constructor(name?: string) {
     super();
     this.name = name || nanoid();
+    this._listenForHistory();
     this._listenForBranch();
     this._listenNode();
     this._listenForTrans();
@@ -32,7 +43,7 @@ export class Forest extends EventEmitter {
 
   makeNode(value, name?, configs?: configType): Node {
     const node = new Node(value, name, configs, this);
-    this.history.set(node.time, node);
+    this.emit('setHistory', node);
     this.emit('node', node);
     return node;
   }
@@ -40,7 +51,6 @@ export class Forest extends EventEmitter {
   node(id): Node | undefined {
     return this.nodes.get(id);
   }
-
   changeNodeConfig(
     id: string,
     changes: configMap
@@ -48,7 +58,7 @@ export class Forest extends EventEmitter {
     const target = this.node(id);
     if (target) {
       const change = target.changeConfig(changes);
-      this.history.set(change.time, change);
+      this.emit('setHistory', change);
       try {
         this.emit('validateNode', target);
         if (change.isActive) {
@@ -56,6 +66,7 @@ export class Forest extends EventEmitter {
         }
       } catch (err) {
         change.fail(err);
+        this.emit('updateHistory', change);
         target.revertConfig(change);
       }
       //todo: broadcast, resolve change;
@@ -68,14 +79,17 @@ export class Forest extends EventEmitter {
     const target = this.node(id);
     if (target) {
       const change = target.next(value);
-      this.history.set(change.time, change);
+      this.emit('setHistory', change);
       try {
         this.emit('changeNodeValue', target);
         if (change.isActive) {
           change.accept();
+          this.emit('updateHistory', change);
         }
       } catch (err) {
         change.fail(err);
+        this.emit('updateHistory', change);
+        this.emit('changeNodeValueError', target, target.value, err);
         target.next(change.current);
         throw err;
       }
@@ -91,7 +105,7 @@ export class Forest extends EventEmitter {
 
   addBranch(branch: branchObj) {
     this.branches.push(branch);
-    this.history.set(branch.time, branch);
+    this.emit('setHistory', branch);
     this.emit('branch', branch);
   }
   branch(source: nanoID, dest: nanoID, del = false): branchObj {
@@ -124,10 +138,10 @@ export class Forest extends EventEmitter {
   private _listenNode() {
     this.on('node', (node: Node) => {
       this.nodes.set(node.id, node);
-      this.history.set(node.time, node);
+      this.emit('setHistory', node);
       this.emit('validateNodes');
     });
-    this.on('changeNodeValue', (_node: Node) => {
+    this.on('changeNodeValue', () => {
       this.emit('validateNodes');
     });
     this.on('validateNodes', () => {
@@ -151,9 +165,65 @@ export class Forest extends EventEmitter {
     }
   }
 
+  private _transCountSubject?: BehaviorSubject<number>;
+  private get transCountSubject(): BehaviorSubject<number> {
+    if (!this._transCountSubject) {
+      this._transCountSubject = new BehaviorSubject(this.transactions.length);
+    }
+    this.on('trans-start', () => {
+      this._transCountSubject?.next(this._transCountSubject.value + 1);
+    });
+    this.on('trans-end', () => {
+      this._transCountSubject?.next(
+        Math.max(this._transCountSubject.value - 1, 0)
+      );
+    });
+    this.on('trans-rollback', () => {
+      this._transCountSubject?.next(
+        Math.max(this._transCountSubject?.value - 1, 0)
+      );
+    });
+
+    return this._transCountSubject;
+  }
+
+  public nodeValueSubject(id: nanoID) {
+    const node = this.node(id);
+    if (!node) {
+      throw e('no node subject with id ', { id });
+    }
+    const subject = new BehaviorSubject(node.value);
+    this.on('updateHistory', change => {
+      if (
+        change instanceof NodeValueChange ||
+        change instanceof NodeConfigChange
+      ) {
+        if (change.state == StateEnum.complete) {
+          const node = this.node(id);
+          if (node?.isActive) subject.next(node.value);
+        }
+      }
+    });
+
+    return combineLatest([
+      subject.pipe(distinctUntilChanged()),
+      this.transCountSubject,
+    ]).pipe(
+      filter(list => list[1] === 0),
+      map(([value]) => value),
+      distinctUntilChanged()
+    );
+  }
+
+  private get transactions(): Trans[] {
+    return Array.from(this.history.values()).filter(item => {
+      return item instanceof Trans && item.isActive;
+    });
+  }
+
   private _listenForTrans() {
     this.on('trans-start', (trans: Trans) => {
-      this.history.set(trans.time, trans);
+      this.emit('setHistory', trans);
       this.pending.add(trans);
     });
 
@@ -183,6 +253,12 @@ export class Forest extends EventEmitter {
         }
       }
       this.emit('compute');
+    });
+  }
+
+  private _listenForHistory() {
+    this.on('setHistory', (change: timeObj) => {
+      this.history.set(change.time, change);
     });
   }
 
