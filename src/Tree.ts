@@ -30,4 +30,12 @@ export class Tree extends Stateful implements timeObj {
     if (configs) {
     }
   }
+
+  static get(time: timeValue, forest): Tree | undefined {
+    const value = forest.Trees.get(time);
+    if (value) {
+      return value as Tree;
+    }
+    return undefined;
+  }
 }

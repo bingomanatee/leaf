@@ -7,14 +7,16 @@ import {
   idStatefulDataObj,
   nodeInitObj,
   timeValue,
+  TypeEnum,
 } from './types';
 import { Time } from './Time';
 import { Forest } from './Forest';
 import { Branch } from './Branch';
-import { detectForm, e } from './utils/tests';
+import { detectForm, detectType, e, isStr } from './utils/tests';
 import { NodeValueChange } from './NodeValueChange';
 
 export class Node extends Stateful implements idStatefulDataObj {
+  private _type: TypeEnum | FormEnum;
   get config(): any {
     return this._config;
   }
@@ -38,6 +40,13 @@ export class Node extends Stateful implements idStatefulDataObj {
     }
     return this._form;
   }
+  get type() {
+    const lc = this.lastChange;
+    if (lc) {
+      return lc.type;
+    }
+    return this._type;
+  }
   get value(): any {
     const lc = this.lastChange;
     if (lc) {
@@ -59,6 +68,7 @@ export class Node extends Stateful implements idStatefulDataObj {
     }
     this._value = data.value;
     this._form = detectForm(data.value);
+    this._type = detectType(data.value);
     this.time = Time.next;
     this._config = data.config || {};
   }
@@ -103,9 +113,35 @@ export class Node extends Stateful implements idStatefulDataObj {
     this.forest.branches.add({ node: this.time, target: targetId });
   }
 
+  _validateType() {
+    if (typeof this.config?.type === 'function') {
+      return this.config.type(this.type);
+    } else if (this.config?.type !== TypeEnum.any) {
+      const expectedForm = isStr(typeof this.config?.type)
+        ? this._form
+        : this.config.type;
+      if (expectedForm !== this.type) {
+        const notes = {
+          target: this,
+          originalForm: this._form,
+          currentForm: this.type,
+        };
+        throw e('type error mismatch', notes);
+      }
+    }
+  }
+
   _validateForm() {
-    if (this.config?.form !== FormEnum.any) {
-      if (this._form !== this.form) {
+    if (this.config?.type) {
+      return this._validateType();
+    }
+    if (typeof this.config?.form === 'function') {
+      return this.config.form(this.form);
+    } else if (this.config?.form !== FormEnum.any) {
+      const expectedForm = isStr(typeof this.config?.form)
+        ? this._form
+        : this.config.form;
+      if (expectedForm !== this.form) {
         const notes = {
           target: this,
           originalForm: this._form,
@@ -129,15 +165,17 @@ export class Node extends Stateful implements idStatefulDataObj {
   }
 
   parents(): Node[] {
+    const branches = this.forest?.branches;
+    const branchRecords = branches?.index('target')?.recordsForKey(this.time);
     return (
-      this.forest.branches
-        .index('target')
-        ?.recordsForKey(this.time)
-        .map(record => {
-          const branch = record as Branch;
-          return branch.node;
-        })
-        .filter(b => b instanceof Node) || []
+      branchRecords?.reduce((list: Node[], record) => {
+        const branch = record as Branch;
+        const node = branch?.node;
+        if (node instanceof Node) {
+          list.push(node);
+        }
+        return list;
+      }, []) || []
     );
   }
 
@@ -150,5 +188,13 @@ export class Node extends Stateful implements idStatefulDataObj {
         return branch.target;
       })
       .filter(b => b instanceof Node);
+  }
+
+  static get(time: timeValue, forest): Node | undefined {
+    const node = forest.nodes.get(time);
+    if (node) {
+      return node as Node;
+    }
+    return undefined;
   }
 }

@@ -5,12 +5,12 @@ import { Time } from './Time';
 import { Forest } from './Forest';
 
 export class Branch extends Stateful implements timeObj {
-  get target(): Node {
-    return this.forest.nodes.get(this._target) as Node;
+  get target(): Node | undefined {
+    return Node.get(this._target, this.forest);
   }
 
-  get node(): Node {
-    return this.forest.nodes.get(this._node) as Node;
+  get node(): Node | undefined {
+    return Node.get(this._node, this.forest);
   }
 
   get nodeId() {
@@ -44,5 +44,12 @@ export class Branch extends Stateful implements timeObj {
 
   get data() {
     return { node: this._node, target: this._target };
+  }
+  static get(time: timeValue, forest): Branch | undefined {
+    const branch = forest.nodes.get(time);
+    if (branch) {
+      return branch as Branch;
+    }
+    return undefined;
   }
 }
