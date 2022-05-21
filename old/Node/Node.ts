@@ -10,7 +10,7 @@ import {
   FormEnum,
   nanoID,
   nodeIdMap,
-} from '../types';
+} from '../../src/types';
 import { Time } from '../Time';
 import { Forest } from '../Forest';
 import { ABSENT, DELETE } from '../constants';
@@ -24,10 +24,10 @@ import {
   isCompound,
   isFn,
   isThere,
-} from '../utils/tests';
-import { clone, setKey } from '../utils/compound';
-import { toMap } from '../utils/conversion';
-import createId from '../utils/createId';
+} from '../../src/utils/tests';
+import { clone, setKey } from '../../src/utils/compound';
+import { toMap } from '../../src/utils/conversion';
+import createId from '../../src/utils/createId';
 import cache from '../cache';
 import { Branch } from '../Branch';
 

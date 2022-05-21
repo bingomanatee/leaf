@@ -1,7 +1,7 @@
 import { Time } from './Time';
 import { ABSENT } from './constants';
-import { isFn, isThere } from './utils/tests';
-import { statefulObj, timeValue } from './types';
+import { isFn, isThere } from '../src/utils/tests';
+import { statefulObj, timeValue } from '../src/types';
 
 /**
  * a function that returns the same value until time changes.

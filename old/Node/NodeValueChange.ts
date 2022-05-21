@@ -1,16 +1,16 @@
-import { configMap, nanoID } from '../types';
+import { nanoID } from '../../src/types';
 import { nanoid } from 'nanoid';
 import { Time } from '../Time';
 import { Stateful } from '../Stateful';
 
-export class NodeConfigChange extends Stateful {
-  readonly next: configMap;
+export class NodeValueChange extends Stateful {
+  readonly next: any;
+  current: any;
   readonly target: nanoID;
   readonly time: number;
-  readonly id: string; // useful????
-  current?: configMap;
+  readonly id: string;
 
-  constructor(target: nanoID, next: configMap, current?: configMap) {
+  constructor(target: nanoID, next: any, current: any) {
     super();
     this.target = target;
     this.id = nanoid();

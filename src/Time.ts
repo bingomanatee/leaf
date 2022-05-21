@@ -1,4 +1,4 @@
-import { timeValue, timeObj } from './types';
+import { timeValue, timeObj } from '../src/types';
 
 export abstract class Time {
   protected static _now = 0;

@@ -1,11 +1,11 @@
-import { StateEnum, statefulObj } from './types';
+import { StateEnum } from '../src/types';
 
-export class Stateful implements statefulObj {
+export class Stateful {
   state: StateEnum;
   stateError?: any;
 
   constructor() {
-    this.state = StateEnum.active;
+    this.state = StateEnum.new;
   }
 
   fail(err) {
@@ -14,11 +14,7 @@ export class Stateful implements statefulObj {
   }
 
   get isActive() {
-    return [StateEnum.active, StateEnum.good].includes(this.state);
-  }
-
-  get isGood() {
-    return [StateEnum.active, StateEnum.good, StateEnum.complete].includes(
+    return ![StateEnum.complete, StateEnum.error, StateEnum.removed].includes(
       this.state
     );
   }

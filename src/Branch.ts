@@ -1,81 +1,48 @@
-import {
-  branchable,
-  branchObj,
-  configMap,
-  configType,
-  nanoID,
-  timeObj,
-} from './types';
-import { e } from './utils/tests';
-import { Time } from './Time';
 import { Stateful } from './Stateful';
-import { toMap } from './utils/conversion';
+import { collectionObj, timeObj, timeValue } from './types';
+import { Node } from './Node';
+import { Time } from './Time';
+import { Forest } from './Forest';
 
-/**
- * represents a directional join from the object represented by source
- * to the object represented by dest.
- *
- * it is stateful in that if it is not active it is not considered "live".
- *
- * note - branches do not have "ids" as such - their identity is the net sum
- * of their values.
- *
- * it can be considered as a verb
- * as in, "join(or break) a and b at [time]"
- */
-export class Branch extends Stateful implements branchObj, timeObj {
-  readonly forest?: any;
-  readonly source: string;
-  readonly dest: string;
-  readonly time: number;
-  readonly del: boolean;
+export class Branch extends Stateful implements timeObj {
+  get target(): Node {
+    return this.forest.nodes.get(this._target) as Node;
+  }
 
-  constructor(
-    source: nanoID,
-    dest: nanoID,
-    configs?: configType,
-    forest?: any
-  ) {
+  get node(): Node {
+    return this.forest.nodes.get(this._node) as Node;
+  }
+
+  get nodeId() {
+    return this._node;
+  }
+
+  get targetId() {
+    return this._target;
+  }
+
+  private forest: Forest;
+  name: any;
+
+  time: timeValue;
+  private _node: timeValue;
+  private _target: timeValue;
+
+  constructor(branches: collectionObj, { name, node, target }) {
     super();
-    if (!(source && dest)) {
-      throw e('invalid branch - missing source &/or dest', {
-        configs,
-        source,
-        dest,
-      });
+    this.forest = branches.context;
+    this.name = name;
+
+    this._node = node;
+    this._target = target;
+
+    if (node === target) {
+      throw new Error('cannot self-branch');
     }
-    if (source === dest) {
-      throw e('cannot create circular-reference', { configs, source, dest });
-    }
-    this.source = source;
-    this.dest = dest;
     this.time = Time.next;
-
-    const configMap = toMap(configs);
-    this.del = configMap?.get('del');
-    this.forest = forest || configMap?.get('forest');
   }
 
-  static eq(branch: branchObj, otherBranch: branchObj) {
-    return (
-      otherBranch.source === branch.source && otherBranch.dest === branch.dest
-    );
-  }
-
-  static includes(branch: branchObj, id: nanoID) {
-    return branch.source === id || branch.dest === id;
-  }
-
-  /**
-   * a convenience utility for linking two nodes.
-   * Note - it does NOT fire off any validation/cachebusting events,
-   * OR put the branch into a forest --
-   * it just creates the branch record.
-   * @param t1
-   * @param t2
-   * @param configs
-   */
-  static between(t1: branchable, t2: branchable, configs?: configMap) {
-    return new Branch(t1.id, t2.id, configs);
+  get data() {
+    return { node: this._node, target: this._target };
   }
 }

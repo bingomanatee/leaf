@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { isNumber, sortBy } from 'lodash-es';
 import { DefEnum, FormEnum, TypeEnum } from '../types';
-import { ABSENT } from '../constants';
+import { ABSENT } from './../types';
 
 export function isThere(item) {
   return ![ABSENT, undefined].includes(item);
