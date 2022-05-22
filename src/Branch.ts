@@ -45,11 +45,22 @@ export class Branch extends Stateful implements timeObj {
   get data() {
     return { node: this._node, target: this._target };
   }
+
   static get(time: timeValue, forest): Branch | undefined {
     const branch = forest.nodes.get(time);
     if (branch) {
       return branch as Branch;
     }
     return undefined;
+  }
+
+  static getMany(times: Array<timeValue>, forest): Branch[] {
+    return times.reduce((list: Branch[], time: timeValue) => {
+      const br = Branch.get(time, forest);
+      if (br) {
+        list.push(br);
+      }
+      return list;
+    }, []);
   }
 }

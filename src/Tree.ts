@@ -1,34 +1,47 @@
 import { Stateful } from './Stateful';
-import { collectionObj, timeObj, timeValue } from './types';
+import { collectionObj, timeObj, timeValue, treeInitType } from './types';
 import { Time } from './Time';
 import { Forest } from './Forest';
+import { e } from './utils/tests';
+import { Node } from './Node';
 
 export class Tree extends Stateful implements timeObj {
-  private forest: Forest;
-  name: any;
-  private _rootNode: timeValue;
+  get rootNodeId(): timeValue {
+    return this._rootNodeId;
+  }
+  get config(): any {
+    return this._config;
+  }
+  get rootNode(): Node | undefined {
+    return Node.get(this._rootNodeId, this.forest);
+  }
   time: timeValue;
+  name: string;
+  private readonly forest: Forest;
+  private readonly _rootNodeId: timeValue;
+  private readonly _config: any;
 
-  constructor(nodes: collectionObj, { name, value, configs }) {
+  constructor(trees: collectionObj, props: treeInitType) {
     super();
-    this.forest = nodes.context;
-    this.name = name;
-    this._rootNode = this._addRootNode(value);
-    this._config(configs);
+    this.forest = trees.context;
+    this.name = props.name;
+    if (props.nodeId) {
+      this._rootNodeId = props.nodeId;
+    } else if ('value' in props) {
+      this._rootNodeId = this.forest.nodes.add({
+        value: props.value,
+        name: props.name,
+        config: props.nodeConfig,
+      });
+    } else {
+      throw e('tree requires either value or nodeId', { props });
+    }
+    this._config = props.config;
     this.time = Time.next;
   }
 
   get data() {
-    return this._rootNode;
-  }
-
-  _addRootNode(value) {
-    return this.forest.nodes.add({ value });
-  }
-
-  _config(configs?) {
-    if (configs) {
-    }
+    return this.rootNode?.value;
   }
 
   static get(time: timeValue, forest): Tree | undefined {
@@ -37,5 +50,15 @@ export class Tree extends Stateful implements timeObj {
       return value as Tree;
     }
     return undefined;
+  }
+
+  static getMany(times: Array<timeValue>, forest): Tree[] {
+    return times.reduce((list: Tree[], time: timeValue) => {
+      const node = Tree.get(time, forest);
+      if (node) {
+        list.push(node);
+      }
+      return list;
+    }, []);
   }
 }

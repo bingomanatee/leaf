@@ -24,7 +24,9 @@ export function toMap(m: any, cloneMe = false) {
     return cloneMe ? new Map(m) : m;
   }
   const map = new Map();
-  if (!m) return map;
+  if (!m) {
+    return map;
+  }
 
   if (isArr(m)) {
     m.forEach((value, index) => map.set(index, value));

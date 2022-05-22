@@ -6,6 +6,7 @@ import { NodeValueChange } from './NodeValueChange';
 import { Trans } from './Trans';
 import {
   ABSENT,
+  cacheFn,
   collectionObj,
   nodeInitObj,
   tablesObj,
@@ -40,10 +41,19 @@ export class Forest {
       const branch = record as Branch;
       return branch.targetId;
     });
+
     this.trees = new Collection(
       'trees',
       (trees: collectionObj, data) => new Tree(trees, data),
       this
+    );
+    this.trees.index(
+      'rootNodeId',
+      record => {
+        const tree = record as Tree;
+        return tree.rootNodeId;
+      },
+      { unique: true }
     );
 
     this.nodeValueChanges = new Collection(
@@ -51,7 +61,6 @@ export class Forest {
       (nvc: collectionObj, change) => new NodeValueChange(nvc, change),
       this
     );
-
     this.nodeValueChanges.index('node', change => change.nodeId);
 
     this.transColl = new Collection(
@@ -62,6 +71,7 @@ export class Forest {
 
     this._watchNodeChangesForValidation();
   }
+
   _watchNodeChangesForValidation() {
     this.nodeValueChanges.on('added', record => {
       if (this.validationActive) {
@@ -86,6 +96,7 @@ export class Forest {
   }
 
   private _validationActiveCache?: (() => boolean) | null = null;
+
   get validationActive() {
     if (!this._validationActiveCache) {
       this._validationActiveCache = this.cache(
@@ -120,7 +131,7 @@ export class Forest {
    * @param generator:  {(forest: any) => any} a method that computes a value
    * @param tables  {tableObj} an object that defines the tables to watch
    */
-  cache(generator: (forest: any) => any, tables: tablesObj): () => any {
+  cache(generator: (forest: any) => any, tables: tablesObj): cacheFn {
     let cached = ABSENT;
     const context = this;
     Object.keys(tables).forEach(tableName => {

@@ -11,7 +11,7 @@ describe('forest', () => {
     it('has the right value', () => {
       const forest = new Forest();
 
-      const nid = forest.nodes.add({ value: 'foo' });
+      const nid = forest.nodes.add({ name: 'bar', value: 'foo' });
 
       const node = forest.nodes.get(nid);
       expect(node?.data).toBe('foo');
@@ -29,6 +29,7 @@ describe('forest', () => {
 
         const nid = forest.nodes.add({
           value: 'foo',
+          name: 'bar',
           config: { form: FormEnum.any },
         });
         const node = forest.nodes.get(nid) as Node;
@@ -46,6 +47,7 @@ describe('forest', () => {
 
         const nid = forest.nodes.add({
           value: 'foo',
+          name: 'bar',
           config: { form: FormEnum.any },
         });
         const node = forest.nodes.get(nid) as Node;

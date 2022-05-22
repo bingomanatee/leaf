@@ -22,6 +22,7 @@ export class Collection extends EventEmitter implements collectionObj {
   ) => idStatefulDataObj;
   // @ts-ignore
   private _context: any;
+
   constructor(
     name,
     recordCreator: (collection: collectionObj, data: any) => idStatefulDataObj,
@@ -68,7 +69,9 @@ export class Collection extends EventEmitter implements collectionObj {
   }
 
   doState(time: timeValue, method: string, value?: any) {
-    if (!this.has(time)) return undefined;
+    if (!this.has(time)) {
+      return undefined;
+    }
     const record = this.get(time);
     if (record) {
       const lastState = record.state;
@@ -95,9 +98,12 @@ export class Collection extends EventEmitter implements collectionObj {
     }
     return undefined;
   }
+
   // @ts-ignore
   setState(time: timeValue, state: StateEnum): idStatefulDataObj | undefined {
-    if (!this.has(time)) return;
+    if (!this.has(time)) {
+      return;
+    }
     const record = this.get(time);
     if (record && record.state !== state) {
       const lastState = record.state;

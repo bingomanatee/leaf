@@ -111,6 +111,7 @@ export type collectionIndexObj = {
 };
 export type transData = { message: any; noValidation?: boolean };
 export type nodeInitObj = {
+  name: string;
   value: any;
   config?: configObj;
 };
@@ -126,3 +127,13 @@ type ivValue = boolean | ivFn;
 export type indexTestFn = (record: idStatefulDataObj) => boolean;
 
 export type nvcInit = { node: timeValue; value: any };
+
+export type cacheFn = () => any;
+
+export type treeInitType = {
+  nodeId?: timeValue;
+  value?: any;
+  config?: configObj;
+  nodeConfig?: configObj;
+  name: string;
+};

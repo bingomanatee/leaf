@@ -94,7 +94,9 @@ export class CollectionIndex {
       return [];
     }
     const result = this.index.get(key);
-    if (!result) return [];
+    if (!result) {
+      return [];
+    }
     if (result instanceof Set) {
       return Array.from(result.values());
     }

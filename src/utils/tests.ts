@@ -82,6 +82,7 @@ class TypeDef {
   isForm: boolean;
   name: DefEnum;
   order: number;
+
   constructor(name: DefEnum, test: any, isForm = false, order = 0) {
     this.name = name;
     this.isForm = isForm;
@@ -128,7 +129,9 @@ export function detectForm(value): DefEnum {
   const tests = sortBy(Array.from(TESTS.values()), 'order');
   for (let i = 0; i < tests.length; ++i) {
     const def: TypeDef = tests[i];
-    if (!def.isForm) continue;
+    if (!def.isForm) {
+      continue;
+    }
     if (def.test(value)) {
       return def.name;
     }
@@ -149,7 +152,9 @@ export function isCompound(type) {
 export function detectType(value) {
   for (let i = 0; i < tests.length; ++i) {
     const def: TypeDef = tests[i];
-    if (def.isForm) continue;
+    if (def.isForm) {
+      continue;
+    }
     if (def.test(value)) {
       return def.name;
     }
@@ -236,7 +241,9 @@ const FIND_SYMBOL = /Symbol\((.*:)?(.*)\)/;
  * @param target
  */
 export function testForType({ next, target }): string | null {
-  if (target.type === TypeEnum.any) return null;
+  if (target.type === TypeEnum.any) {
+    return null;
+  }
   let out: any = null;
   if (!target.type) {
     out = null;
